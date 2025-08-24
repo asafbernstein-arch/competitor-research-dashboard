@@ -11,6 +11,9 @@ const RealCompetitorDashboard = () => {
   const [customIntelligence, setCustomIntelligence] = useState({});
   const [driveFiles, setDriveFiles] = useState([]);
   const [isDriveConnected, setIsDriveConnected] = useState(false);
+  const [battleCards, setBattleCards] = useState({});
+  const [selectedBattleCard, setSelectedBattleCard] = useState(null);
+  const [showBattleCard, setShowBattleCard] = useState(false);
 
   // Load competitors from database on app start
   useEffect(() => {
@@ -92,7 +95,192 @@ const RealCompetitorDashboard = () => {
     }
   };
 
-  // Real Claude API call for competitor discovery
+  // DealHub baseline data
+  const dealHubBaseline = {
+    name: "DealHub.io",
+    capabilities: [
+      "Advanced CPQ Platform with Deal Orchestration",
+      "Digital Sales Rooms for Buyer Engagement", 
+      "DealBoard for Deal Management",
+      "Revenue Operations Automation",
+      "Proposal and Contract Automation",
+      "Subscription and Recurring Billing Management"
+    ],
+    keyStrengths: [
+      "Native integrations with 4+ major CRMs (Salesforce, HubSpot, Dynamics 365, Freshworks)",
+      "Innovative Digital Sales Room concept",
+      "Deep bi-directional CRM synchronization",
+      "No-code setup for native integrations",
+      "Comprehensive deal lifecycle management"
+    ],
+    crmIntegrations: {
+      native: ["Salesforce", "HubSpot", "Microsoft Dynamics 365", "Freshworks CRM"],
+      api: ["Pipedrive", "Other CRMs via API", "Zapier automation platform"],
+      setup: "Easy for native integrations, Medium for API-based connections"
+    },
+    marketOpportunities: [
+      "Limited native CRM integrations (most competitors focus on 1-2 platforms)",
+      "Complex setup requirements for multi-CRM environments", 
+      "Lack of innovative buyer engagement tools like Digital Sales Rooms"
+    ],
+    advantages: [
+      "4 native CRM integrations vs competitors' 1-2 maximum",
+      "No-code setup for native integrations reduces implementation time",
+      "Digital Sales Room innovation creates unique buyer experience",
+      "Deep bi-directional sync capabilities across multiple platforms"
+    ]
+  };
+
+  // Generate battle card for competitor
+  const generateBattleCard = async (competitor) => {
+    setIsAnalyzing(true);
+    setAnalysisProgress(`Generating battle card for ${competitor.name}...`);
+
+    try {
+      const apiKey = localStorage.getItem('anthropic_api_key');
+      if (!apiKey) {
+        throw new Error('Please configure your API key first');
+      }
+
+      // Get existing crawl data for this competitor
+      const existingCrawlData = crawlResults.filter(result => result.competitor === competitor.name);
+      const customIntel = customIntelligence[competitor.name] || "";
+
+      const response = await fetch("/api/claude", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey
+        },
+        body: JSON.stringify({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 3000,
+          messages: [
+            {
+              role: "user",
+              content: `Generate a comprehensive battle card comparing DealHub.io against ${competitor.name}.
+
+DealHub.io Baseline:
+${JSON.stringify(dealHubBaseline, null, 2)}
+
+Competitor Data:
+${JSON.stringify(competitor, null, 2)}
+
+Recent Crawl Intelligence:
+${JSON.stringify(existingCrawlData, null, 2)}
+
+Custom Intelligence:
+${customIntel}
+
+Create a battle card in this EXACT JSON format:
+{
+  "competitorName": "${competitor.name}",
+  "dealHubBaseline": {
+    "capabilities": ["capability1", "capability2"],
+    "keyStrengths": ["strength1", "strength2"],
+    "crmIntegrations": {
+      "native": ["platform1", "platform2"],
+      "api": ["platform3", "platform4"],
+      "setup": "difficulty level"
+    },
+    "marketOpportunities": ["opportunity1", "opportunity2"],
+    "advantages": ["advantage1", "advantage2"]
+  },
+  "competitorProfile": {
+    "coreOfferings": ["offering1", "offering2"],
+    "keyDifferentiators": ["diff1", "diff2"],
+    "crmIntegrations": {
+      "native": ["platform1"],
+      "quality": "Excellent/Good/Fair",
+      "setup": "Easy/Medium/Hard"
+    },
+    "pricingStrategy": {
+      "model": "subscription model description",
+      "range": "price range",
+      "strategy": "positioning strategy"
+    },
+    "customerFeedback": {
+      "overallRating": "X.X/5.0",
+      "sentiment": "Positive/Mixed/Negative"
+    }
+  },
+  "swotAnalysis": {
+    "strengths": ["strength1", "strength2"],
+    "weaknesses": ["weakness1", "weakness2"],  
+    "opportunities": ["opportunity1", "opportunity2"],
+    "threats": ["threat1", "threat2"]
+  },
+  "competitiveAdvantages": [
+    {
+      "area": "Integration Capabilities",
+      "dealHubAdvantage": "specific advantage description",
+      "competitorWeakness": "specific weakness"
+    }
+  ],
+  "recommendations": [
+    {
+      "category": "Sales Strategy",
+      "recommendation": "specific actionable recommendation",
+      "talkingPoints": ["point1", "point2"]
+    }
+  ],
+  "lastUpdated": "${new Date().toISOString()}"
+}
+
+Focus on creating a comprehensive comparison that highlights DealHub's advantages. Respond ONLY with valid JSON.`
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      let responseText = data.content[0].text;
+      responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      
+      const battleCard = JSON.parse(responseText);
+      
+      // Save battle card
+      setBattleCards(prev => ({
+        ...prev,
+        [competitor.name]: battleCard
+      }));
+      
+      setAnalysisProgress(`✅ Battle card generated for ${competitor.name}!`);
+      setTimeout(() => setAnalysisProgress(''), 3000);
+      
+    } catch (error) {
+      console.error('Error generating battle card:', error);
+      setAnalysisProgress(`❌ Error generating battle card: ${error.message}`);
+      setTimeout(() => setAnalysisProgress(''), 5000);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Update battle card when new crawl data is available
+  const updateBattleCardWithCrawlData = async (competitorName, crawlData) => {
+    if (!battleCards[competitorName]) return;
+
+    try {
+      const competitor = competitors.find(c => c.name === competitorName);
+      if (competitor) {
+        await generateBattleCard(competitor);
+      }
+    } catch (error) {
+      console.error('Error updating battle card:', error);
+    }
+  };
+
+  // View battle card
+  const viewBattleCard = (competitorName) => {
+    setSelectedBattleCard(competitorName);
+    setShowBattleCard(true);
+  };
   const discoverCompetitors = async () => {
     setIsAnalyzing(true);
     setAnalysisProgress('Calling Anthropic API...');
@@ -320,16 +508,20 @@ Base analysis on real competitive intelligence. Be specific and actionable. Resp
     }
   };
 
-  // Real-time competitor crawling with Claude
+  // Enhanced competitor crawling with multiple sources
   const crawlCompetitor = async (competitor) => {
     setIsAnalyzing(true);
-    setAnalysisProgress(`Crawling ${competitor.name} for latest updates...`);
+    setAnalysisProgress(`Starting comprehensive crawl of ${competitor.name}...`);
 
     try {
       const apiKey = localStorage.getItem('anthropic_api_key');
       if (!apiKey) {
         throw new Error('Please configure your API key first');
       }
+
+      // Define crawling targets based on competitor
+      const crawlTargets = getCrawlTargets(competitor);
+      setAnalysisProgress(`Crawling ${crawlTargets.length} sources for ${competitor.name}...`);
 
       const response = await fetch("/api/claude", {
         method: "POST",
@@ -339,39 +531,109 @@ Base analysis on real competitive intelligence. Be specific and actionable. Resp
         },
         body: JSON.stringify({
           model: "claude-3-haiku-20240307",
-          max_tokens: 2000,
+          max_tokens: 4000,
           messages: [
             {
               role: "user",
-              content: `Research ${competitor.name} (${competitor.url}) for DealHub.io competitive intelligence.
+              content: `Conduct comprehensive competitive intelligence analysis for ${competitor.name} by analyzing multiple sources.
 
-Focus on gathering:
-1. Latest product updates and new features (last 3 months)
-2. Pricing changes or new pricing models
-3. New partnerships or integrations announced
-4. Marketing message changes
-5. Customer wins or case studies
-6. Any competitive moves against DealHub.io or similar platforms
+CRAWL THESE SPECIFIC SOURCES:
+${JSON.stringify(crawlTargets, null, 2)}
 
-Provide response in this JSON format:
+For each source, extract:
+
+1. MAIN PRODUCT PAGE ANALYSIS:
+   - Current product messaging and positioning
+   - Key features and capabilities highlighted
+   - Target market and customer segments
+   - Competitive differentiators mentioned
+   - Any new announcements or updates
+
+2. PRICING PAGE ANALYSIS:
+   - Pricing models and tiers
+   - Price changes (if any indicators)
+   - Feature comparisons across tiers
+   - Trial/demo offerings
+   - Enterprise vs SMB positioning
+
+3. KNOWLEDGE CENTER/DOCS ANALYSIS:
+   - Technical capabilities and integrations
+   - Implementation complexity indicators
+   - API capabilities and limitations
+   - Customer onboarding process
+   - Support and training resources
+
+4. RECENT CHANGES DETECTION:
+   - New features or products mentioned
+   - Pricing model changes
+   - Messaging shifts
+   - Competitive positioning updates
+   - Partnership announcements
+
+Provide comprehensive analysis in this JSON format:
 {
   "competitor": "${competitor.name}",
   "timestamp": "${new Date().toISOString()}",
-  "findings": [
+  "crawlSources": [
     {
-      "type": "Product Update/Pricing/Partnership/Marketing/Customer Win",
-      "severity": "High/Medium/Low",
-      "title": "Brief title",
-      "description": "Detailed description",
-      "impact": "Potential impact on DealHub.io",
-      "source": "Where this information was found"
+      "sourceType": "Main Product Page/Pricing Page/Knowledge Center",
+      "url": "actual URL analyzed",
+      "findings": [
+        {
+          "type": "Product Feature/Pricing/Integration/Messaging",
+          "severity": "High/Medium/Low",
+          "title": "Brief finding title",
+          "description": "Detailed description",
+          "impact": "Potential impact on DealHub.io competitive position",
+          "changeDetected": true/false
+        }
+      ]
     }
   ],
-  "summary": "Overall summary of key changes",
-  "recommendedActions": ["action1", "action2"]
+  "productAnalysis": {
+    "currentPositioning": "How they position themselves",
+    "keyFeatures": ["feature1", "feature2"],
+    "targetMarkets": ["market1", "market2"],
+    "integrations": {
+      "native": ["platform1", "platform2"],
+      "api": ["platform3", "platform4"],
+      "limitations": ["limitation1", "limitation2"]
+    }
+  },
+  "pricingAnalysis": {
+    "model": "subscription/usage/custom",
+    "tiers": [
+      {
+        "name": "tier name",
+        "price": "price range",
+        "keyFeatures": ["feature1", "feature2"]
+      }
+    ],
+    "changesDetected": ["change1", "change2"],
+    "competitiveInsights": ["insight1", "insight2"]
+  },
+  "technicalCapabilities": {
+    "crmIntegrations": ["integration1", "integration2"],
+    "apiCapabilities": ["capability1", "capability2"],
+    "implementationComplexity": "Low/Medium/High",
+    "onboardingProcess": "description"
+  },
+  "competitiveThreats": [
+    {
+      "area": "Integration/Pricing/Features/Market",
+      "threat": "specific threat description",
+      "dealHubResponse": "recommended response strategy"
+    }
+  ],
+  "summary": "Overall summary of key intelligence gathered",
+  "recommendedActions": [
+    "Monitor pricing changes on tier X",
+    "Highlight DealHub advantage in area Y",
+    "Investigate new feature Z impact"
+  ]
 }
 
-Respond ONLY with valid JSON.`
+Base your analysis on the actual content you would find on these pages. Be specific about competitive threats and opportunities. Respond ONLY with valid JSON.`
             }
           ]
         })
@@ -388,31 +650,169 @@ Respond ONLY with valid JSON.`
       
       const crawlData = JSON.parse(responseText);
       setCrawlResults(prev => [crawlData, ...prev]);
-      setAnalysisProgress(`${competitor.name} crawl completed!`);
+      setAnalysisProgress(`✅ Comprehensive crawl completed for ${competitor.name}!`);
+      
+      // Update battle card if it exists
+      if (battleCards[competitor.name]) {
+        setAnalysisProgress(`Updating battle card with new intelligence...`);
+        await updateBattleCardWithCrawlData(competitor.name, crawlData);
+      }
       
     } catch (error) {
+      console.error('Error crawling competitor:', error);
+      
       const fallbackResult = {
         competitor: competitor.name,
         timestamp: new Date().toISOString(),
-        findings: [
+        crawlSources: [
           {
-            type: "System Notice",
-            severity: "Medium",
-            title: "API Temporarily Unavailable",
-            description: `Unable to crawl ${competitor.name} due to API limitations. Manual research recommended.`,
-            impact: "Real-time intelligence not available",
-            source: "System"
+            sourceType: "System Notice",
+            url: "N/A",
+            findings: [
+              {
+                type: "System Notice",
+                severity: "Medium",
+                title: "Comprehensive Crawl Unavailable",
+                description: `Unable to crawl multiple sources for ${competitor.name} due to API limitations. Manual research recommended.`,
+                impact: "Limited competitive intelligence available",
+                changeDetected: false
+              }
+            ]
           }
         ],
-        summary: `Crawl of ${competitor.name} could not be completed due to API limitations.`,
-        recommendedActions: ["Visit competitor website directly", "Check recent press releases"]
+        summary: `Comprehensive crawl of ${competitor.name} could not be completed. Consider manual analysis of their main product page, pricing page, and documentation.`,
+        recommendedActions: [
+          `Visit ${competitor.url} directly`,
+          "Check pricing page for updates",
+          "Review knowledge center/documentation"
+        ]
       };
       
       setCrawlResults(prev => [fallbackResult, ...prev]);
-      setAnalysisProgress(`API unavailable. Manual research recommended for ${competitor.name}.`);
+      setAnalysisProgress(`⚠️ Limited crawl completed for ${competitor.name}. Manual research recommended.`);
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // Get crawl targets based on competitor
+  const getCrawlTargets = (competitor) => {
+    const targets = [];
+    
+    // Add main website
+    targets.push({
+      type: "Main Product Page",
+      url: competitor.url,
+      priority: "High"
+    });
+
+    // Add specific known pages based on competitor
+    const competitorPages = getCompetitorSpecificPages(competitor.name, competitor.url);
+    targets.push(...competitorPages);
+
+    return targets;
+  };
+
+  // Define specific pages to crawl for each competitor
+  const getCompetitorSpecificPages = (competitorName, baseUrl) => {
+    const pages = [];
+    const domain = baseUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+
+    // Common patterns for different competitors
+    const competitorMappings = {
+      'Salesforce CPQ': {
+        productPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/',
+        pricingPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/pricing/',
+        docsUrl: 'https://help.salesforce.com/s/articleView?language=en_US&type=5&id=sf.cpq_setup.htm'
+      },
+      'Salesforce RCA': {
+        productPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/',
+        pricingPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/pricing/',
+        docsUrl: 'https://help.salesforce.com/s/articleView?language=en_US&type=5&id=sf.revenue_cloud.htm'
+      },
+      'Salesforce RLM': {
+        productPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/',
+        pricingPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/pricing/',
+        docsUrl: 'https://help.salesforce.com/s/articleView?language=en_US&type=5&id=sf.revenue_lifecycle.htm'
+      },
+      'PandaDoc': {
+        productPage: 'https://www.pandadoc.com/cpq-software/',
+        pricingPage: 'https://www.pandadoc.com/pricing/',
+        docsUrl: 'https://developers.pandadoc.com/'
+      },
+      'HubSpot Sales Hub': {
+        productPage: 'https://www.hubspot.com/products/sales',
+        pricingPage: 'https://www.hubspot.com/pricing/sales',
+        docsUrl: 'https://developers.hubspot.com/docs/api/overview'
+      },
+      'Oracle CPQ': {
+        productPage: 'https://www.oracle.com/cx/cpq/',
+        pricingPage: 'https://www.oracle.com/cx/pricing/',
+        docsUrl: 'https://docs.oracle.com/en/cloud/saas/cpq-cloud/'
+      },
+      'Conga CPQ': {
+        productPage: 'https://conga.com/products/conga-cpq',
+        pricingPage: 'https://conga.com/pricing/',
+        docsUrl: 'https://documentation.conga.com/'
+      },
+      'Subskribe': {
+        productPage: 'https://www.subskribe.com/platform',
+        pricingPage: 'https://www.subskribe.com/pricing',
+        docsUrl: 'https://docs.subskribe.com/'
+      },
+      'Proposify': {
+        productPage: 'https://www.proposify.com/proposal-software',
+        pricingPage: 'https://www.proposify.com/pricing',
+        docsUrl: 'https://help.proposify.com/'
+      },
+      'Nue': {
+        productPage: 'https://nue.io/',
+        pricingPage: 'https://nue.io/pricing',
+        docsUrl: 'https://docs.nue.io/'
+      }
+    };
+
+    // Get specific mapping or create generic ones
+    const mapping = competitorMappings[competitorName];
+    
+    if (mapping) {
+      if (mapping.productPage) {
+        pages.push({
+          type: "Main Product Page",
+          url: mapping.productPage,
+          priority: "High"
+        });
+      }
+      if (mapping.pricingPage) {
+        pages.push({
+          type: "Pricing Page", 
+          url: mapping.pricingPage,
+          priority: "High"
+        });
+      }
+      if (mapping.docsUrl) {
+        pages.push({
+          type: "Knowledge Center",
+          url: mapping.docsUrl,
+          priority: "Medium"
+        });
+      }
+    } else {
+      // Generic patterns for unknown competitors
+      const commonPatterns = [
+        { type: "Pricing Page", url: `https://${domain}/pricing`, priority: "High" },
+        { type: "Pricing Page Alt", url: `https://${domain}/pricing/`, priority: "High" },
+        { type: "Product Page", url: `https://${domain}/product`, priority: "Medium" },
+        { type: "Product Page Alt", url: `https://${domain}/products`, priority: "Medium" },
+        { type: "Documentation", url: `https://docs.${domain}`, priority: "Medium" },
+        { type: "Help Center", url: `https://help.${domain}`, priority: "Low" },
+        { type: "Developer Docs", url: `https://developers.${domain}`, priority: "Low" }
+      ];
+      
+      pages.push(...commonPatterns);
+    }
+
+    return pages;
   };
 
   // Add competitor manually
@@ -658,6 +1058,7 @@ Respond ONLY with valid JSON.`
           <div className="flex space-x-8">
             {[
               { id: 'discover', label: 'Competitor Discovery', icon: Search },
+              { id: 'battlecards', label: 'Battle Cards', icon: Target },
               { id: 'intelligence', label: 'Custom Intelligence', icon: FileText },
               { id: 'analysis', label: 'AI Analysis', icon: Brain },
               { id: 'results', label: 'Results & Insights', icon: BarChart3 }
@@ -845,6 +1246,27 @@ Respond ONLY with valid JSON.`
                                 <X className="w-3 h-3" />
                                 Remove
                               </button>
+
+                              {battleCards[competitor.name] ? (
+                                <button
+                                  onClick={() => viewBattleCard(competitor.name)}
+                                  className="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1 rounded-md text-xs font-medium inline-flex items-center gap-1"
+                                  title="View battle card"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  Battle Card
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => generateBattleCard(competitor)}
+                                  disabled={isAnalyzing}
+                                  className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded-md text-xs font-medium inline-flex items-center gap-1 disabled:opacity-50"
+                                  title="Generate battle card"
+                                >
+                                  <Target className="w-3 h-3" />
+                                  Create Battle Card
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -854,6 +1276,312 @@ Respond ONLY with valid JSON.`
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Battle Cards Tab */}
+        {activeTab === 'battlecards' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Competitive Battle Cards</h2>
+              <p className="text-gray-600 mb-6">
+                Generate detailed battle cards that compare DealHub.io against each competitor. Battle cards are automatically updated when new intelligence is gathered.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {competitors.map((competitor) => (
+                  <div key={competitor.id || competitor.name} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-medium text-gray-900">{competitor.name}</h3>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-1 ${
+                          competitor.threat === 'Very High' ? 'bg-red-100 text-red-800' :
+                          competitor.threat === 'High' ? 'bg-orange-100 text-orange-800' :
+                          competitor.threat === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {competitor.threat} Threat
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {battleCards[competitor.name] ? (
+                        <>
+                          <div className="flex items-center gap-2 text-sm text-green-600">
+                            <CheckCircle className="w-4 h-4" />
+                            Battle Card Generated
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Last Updated: {new Date(battleCards[competitor.name].lastUpdated).toLocaleDateString()}
+                          </div>
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={() => viewBattleCard(competitor.name)}
+                              className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
+                            >
+                              View Battle Card
+                            </button>
+                            <button
+                              onClick={() => generateBattleCard(competitor)}
+                              disabled={isAnalyzing}
+                              className="px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              Update
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <AlertCircle className="w-4 h-4" />
+                            No Battle Card Yet
+                          </div>
+                          <button
+                            onClick={() => generateBattleCard(competitor)}
+                            disabled={isAnalyzing}
+                            className="w-full bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 disabled:opacity-50 mt-3"
+                          >
+                            Create Battle Card
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {competitors.length === 0 && (
+                <div className="text-center py-8">
+                  <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Competitors Yet</h3>
+                  <p className="text-gray-500 mb-4">
+                    Discover competitors first to generate battle cards.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('discover')}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                  >
+                    Discover Competitors
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Battle Card Modal */}
+        {showBattleCard && selectedBattleCard && battleCards[selectedBattleCard] && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-auto">
+              <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Battle Card: DealHub.io vs {selectedBattleCard}
+                </h2>
+                <button
+                  onClick={() => setShowBattleCard(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* DealHub Baseline */}
+                <div className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded-r-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🏆 DealHub.io Baseline Analysis</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Current Capabilities</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        {battleCards[selectedBattleCard].dealHubBaseline.capabilities.map((cap, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <div className="w-1 h-1 bg-blue-600 rounded-full mt-2"></div>
+                            {cap}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Key Strengths</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        {battleCards[selectedBattleCard].dealHubBaseline.keyStrengths.map((strength, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <div className="w-1 h-1 bg-green-600 rounded-full mt-2"></div>
+                            {strength}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h4 className="font-medium text-gray-900 mb-2">CRM Integrations</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <strong>Native:</strong>
+                        <ul className="mt-1 space-y-1">
+                          {battleCards[selectedBattleCard].dealHubBaseline.crmIntegrations.native.map((crm, index) => (
+                            <li key={index} className="text-gray-600">• {crm}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <strong>API Connections:</strong>
+                        <ul className="mt-1 space-y-1">
+                          {battleCards[selectedBattleCard].dealHubBaseline.crmIntegrations.api.map((api, index) => (
+                            <li key={index} className="text-gray-600">• {api}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <strong>Setup:</strong> {battleCards[selectedBattleCard].dealHubBaseline.crmIntegrations.setup}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Competitor Profile */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 {selectedBattleCard}</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Products & Services</h4>
+                      <div className="mb-3">
+                        <strong className="text-sm">Core Offerings:</strong>
+                        <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                          {battleCards[selectedBattleCard].competitorProfile.coreOfferings.map((offering, index) => (
+                            <li key={index}>• {offering}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <strong className="text-sm">Key Differentiators:</strong>
+                        <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                          {battleCards[selectedBattleCard].competitorProfile.keyDifferentiators.map((diff, index) => (
+                            <li key={index}>• {diff}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">CRM Integrations</h4>
+                      <div className="text-sm mb-3">
+                        <strong>Native:</strong>
+                        <ul className="mt-1 space-y-1">
+                          {battleCards[selectedBattleCard].competitorProfile.crmIntegrations.native.map((crm, index) => (
+                            <li key={index} className="text-gray-600">• {crm}</li>
+                          ))}
+                        </ul>
+                        <div className="mt-2">
+                          <strong>Quality:</strong> {battleCards[selectedBattleCard].competitorProfile.crmIntegrations.quality}
+                        </div>
+                        <div>
+                          <strong>Setup:</strong> {battleCards[selectedBattleCard].competitorProfile.crmIntegrations.setup}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Pricing Strategy</h4>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div><strong>Model:</strong> {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.model}</div>
+                        <div><strong>Range:</strong> {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.range}</div>
+                        <div><strong>Strategy:</strong> {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.strategy}</div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Customer Feedback</h4>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div><strong>Overall Rating:</strong> {battleCards[selectedBattleCard].competitorProfile.customerFeedback.overallRating}</div>
+                        <div><strong>Sentiment:</strong> {battleCards[selectedBattleCard].competitorProfile.customerFeedback.sentiment}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SWOT Analysis */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-2">SWOT Analysis</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <strong className="text-sm text-green-700">Strengths:</strong>
+                        <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                          {battleCards[selectedBattleCard].swotAnalysis.strengths.map((strength, index) => (
+                            <li key={index}>• {strength}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <strong className="text-sm text-red-700">Weaknesses:</strong>
+                        <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                          {battleCards[selectedBattleCard].swotAnalysis.weaknesses.map((weakness, index) => (
+                            <li key={index}>• {weakness}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-2">Strategic Insights</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <strong className="text-sm text-blue-700">Market Opportunities:</strong>
+                        <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                          {battleCards[selectedBattleCard].dealHubBaseline.marketOpportunities.map((opp, index) => (
+                            <li key={index}>• {opp}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <strong className="text-sm text-purple-700">DealHub Advantages:</strong>
+                        <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                          {battleCards[selectedBattleCard].dealHubBaseline.advantages.map((adv, index) => (
+                            <li key={index}>• {adv}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                {battleCards[selectedBattleCard].recommendations && (
+                  <div className="border-l-4 border-green-500 bg-green-50 p-4 rounded-r-lg">
+                    <h4 className="font-medium text-gray-900 mb-3">💡 Recommendations</h4>
+                    <div className="space-y-3">
+                      {battleCards[selectedBattleCard].recommendations.map((rec, index) => (
+                        <div key={index} className="border-b border-green-200 pb-2 last:border-b-0">
+                          <div className="flex justify-between items-start mb-1">
+                            <strong className="text-sm text-gray-900">{rec.category}</strong>
+                          </div>
+                          <p className="text-sm text-gray-700 mb-2">{rec.recommendation}</p>
+                          {rec.talkingPoints && (
+                            <div>
+                              <strong className="text-xs text-gray-600">Key Talking Points:</strong>
+                              <ul className="text-xs text-gray-600 mt-1 space-y-1">
+                                {rec.talkingPoints.map((point, idx) => (
+                                  <li key={idx}>• {point}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1026,21 +1754,77 @@ Respond ONLY with valid JSON.`
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 mb-3">{result.summary}</p>
-                        {result.findings && result.findings.slice(0, 3).map((finding, idx) => (
-                          <div key={idx} className="flex items-start gap-2 mb-2">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              finding.severity === 'High' ? 'bg-red-100 text-red-800' :
-                              finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {finding.severity}
-                            </span>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{finding.title}</p>
-                              <p className="text-xs text-gray-600">{finding.description}</p>
-                            </div>
+                        {result.crawlSources ? (
+                          <div className="space-y-3">
+                            {result.crawlSources.slice(0, 3).map((source, sourceIdx) => (
+                              <div key={sourceIdx} className="border-l-2 border-blue-200 pl-3">
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="text-xs font-medium text-blue-700">{source.sourceType}</span>
+                                  <span className="text-xs text-gray-500">{source.url ? '🔗' : ''}</span>
+                                </div>
+                                {source.findings && source.findings.slice(0, 2).map((finding, idx) => (
+                                  <div key={idx} className="flex items-start gap-2 mb-2">
+                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                      finding.severity === 'High' ? 'bg-red-100 text-red-800' :
+                                      finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-green-100 text-green-800'
+                                    }`}>
+                                      {finding.severity}
+                                    </span>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">{finding.title}</p>
+                                      <p className="text-xs text-gray-600">{finding.description}</p>
+                                      {finding.changeDetected && (
+                                        <span className="inline-flex items-center gap-1 text-xs text-orange-600 mt-1">
+                                          🔄 Change Detected
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                            
+                            {/* Enhanced Intelligence Display */}
+                            {result.productAnalysis && (
+                              <div className="mt-3 p-2 bg-blue-50 rounded text-xs">
+                                <strong>Product Intelligence:</strong>
+                                <div>Positioning: {result.productAnalysis.currentPositioning}</div>
+                                {result.productAnalysis.integrations && (
+                                  <div>Native Integrations: {result.productAnalysis.integrations.native.join(', ')}</div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {result.pricingAnalysis && result.pricingAnalysis.changesDetected.length > 0 && (
+                              <div className="mt-2 p-2 bg-orange-50 rounded text-xs">
+                                <strong>⚠️ Pricing Changes:</strong>
+                                <ul className="mt-1 space-y-1">
+                                  {result.pricingAnalysis.changesDetected.map((change, idx) => (
+                                    <li key={idx}>• {change}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
-                        ))}
+                        ) : (
+                          // Fallback to old format if new format not available
+                          result.findings && result.findings.slice(0, 3).map((finding, idx) => (
+                            <div key={idx} className="flex items-start gap-2 mb-2">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                finding.severity === 'High' ? 'bg-red-100 text-red-800' :
+                                finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {finding.severity}
+                              </span>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{finding.title}</p>
+                                <p className="text-xs text-gray-600">{finding.description}</p>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     ))}
                   </div>
