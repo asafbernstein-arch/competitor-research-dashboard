@@ -1,11 +1,15 @@
 {
   "name": "competitor-research-dashboard",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
+    "web-vitals": "^4.2.3",
     "lucide-react": "^0.263.1"
   },
   "scripts": {
@@ -18,7 +22,11 @@
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "no-unused-vars": "warn",
+      "react-hooks/exhaustive-deps": "warn"
+    }
   },
   "browserslist": {
     "production": [
@@ -31,5 +39,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-private-property-in-object": "^7.24.7"
   }
 }
