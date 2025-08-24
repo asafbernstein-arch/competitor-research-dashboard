@@ -307,15 +307,6 @@ const Dashboard = () => {
             <option value="direct">Direct Competitors</option>
             <option value="indirect">Indirect Competitors</option>
           </select>
-          {selectedCompetitors.length > 0 && (
-            <button 
-              onClick={() => setShowComparison(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
-            >
-              <BarChart3 className="w-4 h-4" />
-              Compare ({selectedCompetitors.length})
-            </button>
-          )}
         </div>
         <div className="flex gap-2">
           <button 
