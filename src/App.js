@@ -323,7 +323,8 @@ Provide response in this EXACT JSON format:
 }
 
 Focus on these key competitors:
-- Salesforce CPQ/Revenue Cloud  
+- Salesforce CPQ (Legacy CPQ product at salesforce.com/products/cpq/)
+- Salesforce Revenue Cloud/RCA/RLM (New revenue platform at salesforce.com/eu/sales/revenue-lifecycle-management/)
 - Subskribe (Quote-to-Revenue with DealDesk AI)
 - Oracle CPQ
 - Conga CPQ (formerly Apttus)
@@ -331,6 +332,7 @@ Focus on these key competitors:
 - Proposify
 - HubSpot Sales Hub
 - Pipedrive CPQ
+- Nue
 
 Respond ONLY with valid JSON. No additional text or explanation.`
             }
@@ -720,12 +722,19 @@ Base your analysis on the actual content you would find on these pages. Be speci
 
     // Common patterns for different competitors
     const competitorMappings = {
+      // Salesforce CPQ (Legacy CPQ Product)
       'Salesforce CPQ': {
-        productPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/',
-        pricingPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/pricing/',
+        productPage: 'https://www.salesforce.com/products/cpq/',
+        pricingPage: 'https://www.salesforce.com/products/cpq/pricing/',
         docsUrl: 'https://help.salesforce.com/s/articleView?language=en_US&type=5&id=sf.cpq_setup.htm'
       },
+      // Salesforce Revenue Cloud/RCA/RLM (New Revenue Platform)
       'Salesforce RCA': {
+        productPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/',
+        pricingPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/pricing/',
+        docsUrl: 'https://help.salesforce.com/s/articleView?language=en_US&type=5&id=sf.revenue_cloud.htm'
+      },
+      'Salesforce Revenue Cloud': {
         productPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/',
         pricingPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/pricing/',
         docsUrl: 'https://help.salesforce.com/s/articleView?language=en_US&type=5&id=sf.revenue_cloud.htm'
@@ -735,6 +744,7 @@ Base your analysis on the actual content you would find on these pages. Be speci
         pricingPage: 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/pricing/',
         docsUrl: 'https://help.salesforce.com/s/articleView?language=en_US&type=5&id=sf.revenue_lifecycle.htm'
       },
+      // Other Competitors
       'PandaDoc': {
         productPage: 'https://www.pandadoc.com/cpq-software/',
         pricingPage: 'https://www.pandadoc.com/pricing/',
@@ -1760,7 +1770,14 @@ Respond ONLY with valid JSON.`
                               <div key={sourceIdx} className="border-l-2 border-blue-200 pl-3">
                                 <div className="flex justify-between items-start mb-2">
                                   <span className="text-xs font-medium text-blue-700">{source.sourceType}</span>
-                                  <span className="text-xs text-gray-500">{source.url ? '🔗' : ''}</span>
+                                  <div className="flex items-center gap-1">
+                                    {source.scrapedSuccessfully ? (
+                                      <span className="text-xs text-green-600">✅ Live Data</span>
+                                    ) : (
+                                      <span className="text-xs text-red-600">❌ Scrape Failed</span>
+                                    )}
+                                    {source.url && <span className="text-xs text-gray-500">🔗</span>}
+                                  </div>
                                 </div>
                                 {source.findings && source.findings.slice(0, 2).map((finding, idx) => (
                                   <div key={idx} className="flex items-start gap-2 mb-2">
@@ -1774,9 +1791,14 @@ Respond ONLY with valid JSON.`
                                     <div>
                                       <p className="text-sm font-medium text-gray-900">{finding.title}</p>
                                       <p className="text-xs text-gray-600">{finding.description}</p>
+                                      {finding.actualContent && (
+                                        <div className="mt-1 p-2 bg-gray-100 rounded text-xs italic">
+                                          ""{finding.actualContent}""
+                                        </div>
+                                      )}
                                       {finding.changeDetected && (
                                         <span className="inline-flex items-center gap-1 text-xs text-orange-600 mt-1">
-                                          🔄 Change Detected
+                                          🔄 Live Change Detected
                                         </span>
                                       )}
                                     </div>
@@ -1785,25 +1807,40 @@ Respond ONLY with valid JSON.`
                               </div>
                             ))}
                             
-                            {/* Enhanced Intelligence Display */}
+                            {/* Enhanced Intelligence Display with Real Data */}
                             {result.productAnalysis && (
                               <div className="mt-3 p-2 bg-blue-50 rounded text-xs">
-                                <strong>Product Intelligence:</strong>
-                                <div>Positioning: {result.productAnalysis.currentPositioning}</div>
+                                <strong>📊 Live Product Intelligence:</strong>
+                                <div>Current Positioning: {result.productAnalysis.currentPositioning}</div>
+                                {result.productAnalysis.actualPricing && (
+                                  <div>Live Pricing: {result.productAnalysis.actualPricing}</div>
+                                )}
                                 {result.productAnalysis.integrations && (
-                                  <div>Native Integrations: {result.productAnalysis.integrations.native.join(', ')}</div>
+                                  <div>Live Integrations: {result.productAnalysis.integrations.native.join(', ')}</div>
                                 )}
                               </div>
                             )}
                             
-                            {result.pricingAnalysis && result.pricingAnalysis.changesDetected.length > 0 && (
-                              <div className="mt-2 p-2 bg-orange-50 rounded text-xs">
-                                <strong>⚠️ Pricing Changes:</strong>
-                                <ul className="mt-1 space-y-1">
-                                  {result.pricingAnalysis.changesDetected.map((change, idx) => (
-                                    <li key={idx}>• {change}</li>
-                                  ))}
-                                </ul>
+                            {result.pricingAnalysis && result.pricingAnalysis.scrapedPricing && (
+                              <div className="mt-2 p-2 bg-green-50 rounded text-xs">
+                                <strong>💰 Live Pricing Data:</strong>
+                                <div>{result.pricingAnalysis.scrapedPricing}</div>
+                                {result.pricingAnalysis.actualContent && (
+                                  <div className="mt-1 italic">""{result.pricingAnalysis.actualContent}""</div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {result.actualFindings && result.actualFindings.length > 0 && (
+                              <div className="mt-2 p-2 bg-purple-50 rounded text-xs">
+                                <strong>🔍 Actual Scraped Findings:</strong>
+                                {result.actualFindings.slice(0, 2).map((finding, idx) => (
+                                  <div key={idx} className="mt-1">
+                                    <div className="font-medium">From: {finding.source}</div>
+                                    <div className="italic">""{finding.content}""</div>
+                                    <div>Insight: {finding.insight}</div>
+                                  </div>
+                                ))}
                               </div>
                             )}
                           </div>
