@@ -1245,7 +1245,7 @@ const Dashboard = () => {
             <ul className="text-sm text-green-700 space-y-1">
               <li>• <strong>Salesforce RLM:</strong> New AI-powered forecasting feature launched Aug 2025</li>
               <li>• <strong>Logik.io:</strong> Reduced starter plan pricing from $50 to $35/user/month</li>
-              <li>• <strong>Nue.io:</strong> Customer satisfaction scores improved 23% with new UI
+              <li>• <strong>Nue.io:</strong> Customer satisfaction scores improved 23% with new UI</li>
               <li>• <strong>ConnectWise:</strong> Q3 earnings show 15% growth in SMB segment</li>
             </ul>
           </div>
