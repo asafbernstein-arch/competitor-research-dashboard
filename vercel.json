@@ -1,10 +1,4 @@
 {
-  "builds": [
-    {
-      "src": "package.json", 
-      "use": "@vercel/static-build"
-    }
-  ],
   "functions": {
     "api/claude.js": {
       "maxDuration": 30
