@@ -64,7 +64,6 @@ const RealCompetitorDashboard = () => {
         throw new Error('Please add your API key first');
       }
 
-      // Use your Vercel proxy instead of calling Anthropic directly
       const response = await fetch("/api/claude", {
         method: "POST",
         headers: {
@@ -74,135 +73,23 @@ const RealCompetitorDashboard = () => {
         body: JSON.stringify({
           model: "claude-3-haiku-20240307",
           max_tokens: 20,
-          messages: [
-            {
-              role: "user",
-              content: "Say hello"
-            }
-          ]
+          messages: [{ role: "user", content: "Say hello" }]
         })
       });
 
-      console.log('Proxy response status:', response.status);
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Proxy error details:', errorData);
         throw new Error(`Proxy error: ${response.status} - ${errorData.error || 'Unknown error'}`);
       }
 
       const data = await response.json();
-      console.log('API test successful:', data);
-      
       setAnalysisProgress('✅ API connection successful via Vercel proxy!');
       setTimeout(() => setAnalysisProgress(''), 3000);
       
     } catch (error) {
-      console.error('API test error:', error);
       setAnalysisProgress(`❌ Connection failed: ${error.message}`);
       setTimeout(() => setAnalysisProgress(''), 5000);
     }
-  };
-
-  const loadFallbackCompetitors = () => {
-    const fallbackCompetitors = [
-      {
-        id: 1,
-        name: 'Salesforce CPQ',
-        url: 'https://salesforce.com/products/cpq/',
-        category: 'Direct',
-        focus: 'Enterprise CPQ with advanced configuration and pricing rules',
-        marketPosition: 'Enterprise',
-        threat: 'Very High',
-        strengths: ['Market leader', 'Deep CRM integration', 'Advanced workflow automation'],
-        weaknesses: ['High cost', 'Complex implementation', 'Steep learning curve'],
-        recentDevelopments: ['Revenue Intelligence AI updates', 'Enhanced mobile experience', 'New pricing optimization features']
-      },
-      {
-        id: 2,
-        name: 'Subskribe',
-        url: 'https://subskribe.com',
-        category: 'Direct',
-        focus: 'Quote-to-Revenue platform with CPQ, subscription billing, and DealDesk AI',
-        marketPosition: 'Mid-market/Enterprise',
-        threat: 'Very High',
-        strengths: ['End-to-end Q2R platform', 'AI-powered deal assistance', 'Modern user experience'],
-        weaknesses: ['Newer market player', 'Limited enterprise customization', 'Smaller partner ecosystem'],
-        recentDevelopments: ['DealDesk AI assistant launch', 'Enhanced subscription billing', 'New Salesforce integration']
-      },
-      {
-        id: 3,
-        name: 'Oracle CPQ',
-        url: 'https://oracle.com/cx/cpq/',
-        category: 'Direct',
-        focus: 'Enterprise CPQ with deep ERP and supply chain integration',
-        marketPosition: 'Enterprise',
-        threat: 'High',
-        strengths: ['ERP integration', 'Manufacturing focus', 'Global enterprise scale'],
-        weaknesses: ['Complex user interface', 'High maintenance overhead', 'Slow feature innovation'],
-        recentDevelopments: ['Oracle Cloud Infrastructure migration', 'Supply chain integration improvements', 'Mobile app updates']
-      },
-      {
-        id: 4,
-        name: 'Conga CPQ',
-        url: 'https://conga.com',
-        category: 'Direct',
-        focus: 'Revenue lifecycle management with document automation and CPQ',
-        marketPosition: 'Enterprise',
-        threat: 'High',
-        strengths: ['Document automation', 'Contract lifecycle management', 'Revenue operations platform'],
-        weaknesses: ['Complex pricing model', 'Implementation complexity', 'User experience challenges'],
-        recentDevelopments: ['Conga Grid 2.0 launch', 'AI-powered document generation', 'Revenue Cloud platform consolidation']
-      },
-      {
-        id: 5,
-        name: 'PandaDoc',
-        url: 'https://pandadoc.com',
-        category: 'Indirect',
-        focus: 'Document automation and eSignature with expanding CPQ capabilities',
-        marketPosition: 'SMB/Mid-market',
-        threat: 'Medium',
-        strengths: ['Easy to use interface', 'Rich template library', 'Strong eSignature features'],
-        weaknesses: ['Limited advanced CPQ', 'Basic pricing configuration', 'No revenue operations'],
-        recentDevelopments: ['CPQ feature enhancements', 'New template marketplace', 'Advanced analytics dashboard']
-      },
-      {
-        id: 6,
-        name: 'HubSpot Sales Hub',
-        url: 'https://hubspot.com/products/sales',
-        category: 'Indirect',
-        focus: 'CRM with quotes and deals management, expanding into CPQ territory',
-        marketPosition: 'SMB/Mid-market',
-        threat: 'Medium',
-        strengths: ['Integrated CRM platform', 'Marketing automation', 'Free tier availability'],
-        weaknesses: ['Basic CPQ functionality', 'Limited complex pricing', 'No subscription billing'],
-        recentDevelopments: ['Quotes tool improvements', 'Revenue operations features', 'AI-powered deal scoring']
-      }
-    ];
-    
-    setCompetitors(fallbackCompetitors);
-    setAnalysisProgress(`Loaded ${fallbackCompetitors.length} curated competitors with latest intelligence. API will be retried automatically.`);
-    
-    setTimeout(() => setAnalysisProgress(''), 4000);
-  };
-
-  const getApiHeaders = () => {
-    const key = apiKey || localStorage.getItem('anthropic_api_key');
-    console.log('Getting API headers, key exists:', !!key);
-    
-    if (!key) {
-      throw new Error('API key not configured. Please add your Anthropic API key.');
-    }
-    
-    if (!key.startsWith('sk-ant-')) {
-      console.warn('API key format may be incorrect. Expected format: sk-ant-...');
-    }
-    
-    return {
-      "Content-Type": "application/json",
-      "x-api-key": key.trim(),
-      "anthropic-version": "2023-06-01"
-    };
   };
 
   // Real Claude API call for competitor discovery
@@ -216,7 +103,6 @@ const RealCompetitorDashboard = () => {
         throw new Error('Please configure your API key first');
       }
 
-      // Use your Vercel API proxy instead of calling Anthropic directly
       const response = await fetch("/api/claude", {
         method: "POST",
         headers: {
@@ -224,7 +110,7 @@ const RealCompetitorDashboard = () => {
           "x-api-key": apiKey
         },
         body: JSON.stringify({
-          model: "claude-3-haiku-20240307", // Use same working model as test
+          model: "claude-3-haiku-20240307",
           max_tokens: 3000,
           messages: [
             {
@@ -264,88 +150,59 @@ Respond ONLY with valid JSON. No additional text or explanation.`
         })
       });
 
-      console.log('API response status:', response.status);
-      console.log('API response headers:', Object.fromEntries(response.headers.entries()));
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('API error:', errorData);
         throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
       }
 
       const data = await response.json();
-      console.log('Anthropic API Response:', data);
       
       if (!data.content || !data.content[0]?.text) {
         throw new Error('Invalid API response format');
       }
       
       let responseText = data.content[0].text;
-      console.log('Raw API response text:', responseText);
-      
-      // Clean up response to extract JSON
       responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      console.log('Cleaned response text:', responseText);
       
       const competitorsData = JSON.parse(responseText);
-      console.log('Parsed competitors data:', competitorsData);
       
       if (!competitorsData.competitors || !Array.isArray(competitorsData.competitors)) {
         throw new Error('Invalid competitors data structure');
       }
       
-      // First, show the competitors immediately
       const competitorsWithIds = competitorsData.competitors.map((comp, index) => ({
         ...comp,
         id: Date.now() + index
       }));
       setCompetitors(competitorsWithIds);
       
-      console.log('Saving competitors to database...');
       setAnalysisProgress('Saving competitors to database...');
       
       try {
-        // Save new competitors to database
         const saveResponse = await fetch('/api/competitors', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(competitorsData.competitors)
         });
 
         if (saveResponse.ok) {
           const saveResult = await saveResponse.json();
-          console.log(`Saved ${saveResult.inserted} new competitors to database`);
           setAnalysisProgress(`Saved ${saveResult.inserted} new competitors to database`);
           
-          // Try to reload all competitors from database
-          try {
-            console.log('Loading competitors from database...');
-            const loadResponse = await fetch('/api/competitors');
-            if (loadResponse.ok) {
-              const allCompetitors = await loadResponse.json();
-              console.log(`Loaded ${allCompetitors.length} competitors from database`);
-              setCompetitors(allCompetitors);
-            } else {
-              console.log('Database load failed, keeping current competitors');
-            }
-          } catch (loadError) {
-            console.log('Database load error, keeping current competitors:', loadError);
+          const loadResponse = await fetch('/api/competitors');
+          if (loadResponse.ok) {
+            const allCompetitors = await loadResponse.json();
+            setCompetitors(allCompetitors);
           }
-        } else {
-          console.error('Failed to save to database');
         }
       } catch (dbError) {
         console.log('Database error, but competitors are still displayed:', dbError);
       }
       
       setAnalysisProgress(`✅ Successfully discovered ${competitorsWithIds.length} competitors!`);
-      
       setTimeout(() => setAnalysisProgress(''), 3000);
       
     } catch (error) {
-      console.error('Full error details:', error);
       setAnalysisProgress(`❌ API Error: ${error.message}`);
       setTimeout(() => setAnalysisProgress(''), 5000);
     } finally {
@@ -364,7 +221,11 @@ Respond ONLY with valid JSON. No additional text or explanation.`
     setAnalysisProgress('Starting comprehensive competitive analysis...');
 
     try {
-      // Combine competitor data with custom intelligence
+      const apiKey = localStorage.getItem('anthropic_api_key');
+      if (!apiKey) {
+        throw new Error('Please configure your API key first');
+      }
+
       const analysisContext = {
         competitors: competitors,
         customIntelligence: customIntelligence,
@@ -374,11 +235,14 @@ Respond ONLY with valid JSON. No additional text or explanation.`
 
       setAnalysisProgress('Analyzing competitive landscape with Claude AI...');
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("/api/claude", {
         method: "POST",
-        headers: getApiHeaders(),
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey
+        },
         body: JSON.stringify({
-          model: "claude-3-haiku-20240307", // Use working model
+          model: "claude-3-haiku-20240307",
           max_tokens: 4000,
           messages: [
             {
@@ -435,6 +299,11 @@ Base analysis on real competitive intelligence. Be specific and actionable. Resp
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+      }
+
       const data = await response.json();
       let responseText = data.content[0].text;
       responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
@@ -445,7 +314,6 @@ Base analysis on real competitive intelligence. Be specific and actionable. Resp
       setActiveTab('results');
       
     } catch (error) {
-      console.error('Error in deep analysis:', error);
       setAnalysisProgress('Error in analysis. Please try again.');
     } finally {
       setIsAnalyzing(false);
@@ -458,11 +326,19 @@ Base analysis on real competitive intelligence. Be specific and actionable. Resp
     setAnalysisProgress(`Crawling ${competitor.name} for latest updates...`);
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const apiKey = localStorage.getItem('anthropic_api_key');
+      if (!apiKey) {
+        throw new Error('Please configure your API key first');
+      }
+
+      const response = await fetch("/api/claude", {
         method: "POST",
-        headers: getApiHeaders(),
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey
+        },
         body: JSON.stringify({
-          model: "claude-3-haiku-20240307", // Use working model
+          model: "claude-3-haiku-20240307",
           max_tokens: 2000,
           messages: [
             {
@@ -501,6 +377,11 @@ Respond ONLY with valid JSON.`
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+      }
+
       const data = await response.json();
       let responseText = data.content[0].text;
       responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
@@ -510,9 +391,6 @@ Respond ONLY with valid JSON.`
       setAnalysisProgress(`${competitor.name} crawl completed!`);
       
     } catch (error) {
-      console.error('Error crawling competitor:', error);
-      
-      // Create fallback crawl result
       const fallbackResult = {
         competitor: competitor.name,
         timestamp: new Date().toISOString(),
@@ -526,12 +404,8 @@ Respond ONLY with valid JSON.`
             source: "System"
           }
         ],
-        summary: `Crawl of ${competitor.name} could not be completed due to API limitations. Consider manual research of their website and recent announcements.`,
-        recommendedActions: [
-          "Visit competitor website directly",
-          "Check recent press releases",
-          "Monitor social media updates"
-        ]
+        summary: `Crawl of ${competitor.name} could not be completed due to API limitations.`,
+        recommendedActions: ["Visit competitor website directly", "Check recent press releases"]
       };
       
       setCrawlResults(prev => [fallbackResult, ...prev]);
@@ -549,15 +423,19 @@ Respond ONLY with valid JSON.`
     setAnalysisProgress('Analyzing new competitor...');
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const apiKey = localStorage.getItem('anthropic_api_key');
+      if (!apiKey) {
+        throw new Error('Please configure your API key first');
+      }
+
+      const response = await fetch("/api/claude", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": process.env.REACT_APP_ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01"
+          "x-api-key": apiKey
         },
         body: JSON.stringify({
-          model: "claude-3-sonnet-20240229",
+          model: "claude-3-haiku-20240307",
           max_tokens: 1000,
           messages: [
             {
@@ -583,33 +461,29 @@ Respond ONLY with valid JSON.`
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+      }
+
       const data = await response.json();
       let responseText = data.content[0].text;
       responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
       
       const newCompetitor = JSON.parse(responseText);
       
-      console.log('Saving new competitor to database...');
       setAnalysisProgress('Saving new competitor to database...');
       
-      // Save to database
       const saveResponse = await fetch('/api/competitors', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([newCompetitor])
       });
 
       if (saveResponse.ok) {
-        const saveResult = await saveResponse.json();
-        console.log(`Saved ${saveResult.inserted} new competitor to database`);
-        
-        // Reload all competitors from database
         const loadResponse = await fetch('/api/competitors');
         if (loadResponse.ok) {
           const allCompetitors = await loadResponse.json();
-          console.log(`Loaded ${allCompetitors.length} total competitors from database`);
           setCompetitors(allCompetitors);
         }
       }
@@ -618,9 +492,6 @@ Respond ONLY with valid JSON.`
       setAnalysisProgress('Competitor added and saved to database!');
       
     } catch (error) {
-      console.error('Error adding competitor:', error);
-      
-      // Fallback: Add competitor with basic info
       const basicCompetitor = {
         id: Date.now(),
         name: competitorUrl.split('//')[1]?.split('/')[0] || 'New Competitor',
@@ -636,13 +507,13 @@ Respond ONLY with valid JSON.`
       
       setCompetitors(prev => [...prev, basicCompetitor]);
       setCompetitorUrl('');
-      setAnalysisProgress('Competitor added with basic info. API analysis unavailable - manual research recommended.');
+      setAnalysisProgress('Competitor added with basic info. Manual research recommended.');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  // File upload handler for Google Drive files
+  // File upload handler
   const handleFileUpload = useCallback(async (event) => {
     const files = Array.from(event.target.files);
     
@@ -714,25 +585,18 @@ Respond ONLY with valid JSON.`
     try {
       setAnalysisProgress(`Removing ${competitorName}...`);
       
-      // Remove from database
       const response = await fetch(`/api/competitors?id=${competitorId}`, {
         method: 'DELETE'
       });
 
       if (response.ok) {
-        const result = await response.json();
-        console.log('Competitor deleted from database:', result);
-        
-        // Remove from local state
         setCompetitors(prev => prev.filter(comp => comp.id !== competitorId));
         setAnalysisProgress(`✅ Removed ${competitorName} successfully`);
-        
         setTimeout(() => setAnalysisProgress(''), 2000);
       } else {
         throw new Error(`Failed to delete competitor: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error removing competitor:', error);
       setAnalysisProgress(`❌ Error removing ${competitorName}: ${error.message}`);
       setTimeout(() => setAnalysisProgress(''), 5000);
     }
@@ -761,7 +625,6 @@ Respond ONLY with valid JSON.`
                 </div>
               )}
               
-              {/* API Status Indicator */}
               <div className={`flex items-center gap-2 text-sm px-3 py-1 rounded-full ${
                 apiKey ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
               }`}>
@@ -772,7 +635,6 @@ Respond ONLY with valid JSON.`
               <button
                 onClick={() => setShowApiConfig(true)}
                 className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2"
-                title="Configure Claude API"
               >
                 <Settings className="w-4 h-4" />
                 API Config
@@ -876,6 +738,7 @@ Respond ONLY with valid JSON.`
             </div>
           </div>
         )}
+
         {/* Competitor Discovery Tab */}
         {activeTab === 'discover' && (
           <div className="space-y-6">
@@ -963,27 +826,27 @@ Respond ONLY with valid JSON.`
                               {competitor.threat}
                             </span>
                           </td>
-                        <td className="px-6 py-4">
-  <div className="flex items-center space-x-3">
-    <button
-      onClick={() => crawlCompetitor(competitor)}
-      disabled={isAnalyzing}
-      className="text-blue-600 hover:text-blue-900 inline-flex items-center gap-1"
-    >
-      <RefreshCw className={`w-3 h-3 ${isAnalyzing ? 'animate-spin' : ''}`} />
-      Crawl Latest
-    </button>
-    
-    <button
-      onClick={() => removeCompetitor(competitor.id, competitor.name)}
-      className="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1 rounded-md text-xs font-medium inline-flex items-center gap-1"
-      title="Remove competitor permanently"
-    >
-      <X className="w-3 h-3" />
-      Remove
-    </button>
-  </div>
-</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-3">
+                              <button
+                                onClick={() => crawlCompetitor(competitor)}
+                                disabled={isAnalyzing}
+                                className="text-blue-600 hover:text-blue-900 inline-flex items-center gap-1"
+                              >
+                                <RefreshCw className={`w-3 h-3 ${isAnalyzing ? 'animate-spin' : ''}`} />
+                                Crawl Latest
+                              </button>
+                              
+                              <button
+                                onClick={() => removeCompetitor(competitor.id, competitor.name)}
+                                className="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1 rounded-md text-xs font-medium inline-flex items-center gap-1"
+                                title="Remove competitor permanently"
+                              >
+                                <X className="w-3 h-3" />
+                                Remove
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -1242,111 +1105,6 @@ Respond ONLY with valid JSON.`
                           </li>
                         ))}
                       </ul>
-                    </div>
-                  </div>
-                )}
-
-                {analysisResults.competitorMatrix && (
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Competitive Matrix</h3>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full">
-                        <thead>
-                          <tr className="border-b border-gray-200">
-                            <th className="text-left py-3 px-4 font-medium text-gray-900">Feature</th>
-                            <th className="text-center py-3 px-4 font-medium text-blue-600">DealHub.io</th>
-                            {analysisResults.competitorMatrix[0]?.competitors && 
-                              Object.keys(analysisResults.competitorMatrix[0].competitors).map(comp => (
-                                <th key={comp} className="text-center py-3 px-4 font-medium text-gray-600">{comp}</th>
-                              ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {analysisResults.competitorMatrix.map((row, index) => (
-                            <tr key={index} className="border-b border-gray-100">
-                              <td className="py-3 px-4 font-medium text-gray-900">{row.feature}</td>
-                              <td className="py-3 px-4 text-center">
-                                <div className="flex items-center justify-center">
-                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <span className="text-sm font-bold text-blue-600">{row.dealhub}</span>
-                                  </div>
-                                </div>
-                              </td>
-                              {row.competitors && Object.values(row.competitors).map((score, idx) => (
-                                <td key={idx} className="py-3 px-4 text-center text-gray-600">{score}</td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {analysisResults.threatAssessment && (
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-red-600" />
-                      Threat Assessment
-                    </h3>
-                    <div className="space-y-4">
-                      {analysisResults.threatAssessment.map((threat, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <h4 className="font-medium text-gray-900">{threat.competitor}</h4>
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              threat.threat === 'Very High' ? 'bg-red-100 text-red-800' :
-                              threat.threat === 'High' ? 'bg-orange-100 text-orange-800' :
-                              threat.threat === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {threat.threat} Threat
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-3">{threat.reasoning}</p>
-                          {threat.recommendedActions && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 mb-2">Recommended Actions:</p>
-                              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                                {threat.recommendedActions.map((action, idx) => (
-                                  <li key={idx}>{action}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {analysisResults.opportunities && (
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-green-600" />
-                      Market Opportunities
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {analysisResults.opportunities.map((opportunity, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-medium text-gray-900">{opportunity.area}</h4>
-                            <div className="flex gap-2">
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                opportunity.priority === 'High' ? 'bg-red-100 text-red-800' :
-                                opportunity.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-green-100 text-green-800'
-                              }`}>
-                                {opportunity.priority}
-                              </span>
-                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                {opportunity.timeframe}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-600">{opportunity.description}</p>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 )}
