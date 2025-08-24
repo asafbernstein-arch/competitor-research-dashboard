@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, BarChart3, TrendingUp, Globe, AlertCircle, CheckCircle, ArrowUpRight, Download, RefreshCw, Plus, Settings, FileText, Eye, Target, Brain, Zap, Upload } from 'lucide-react';
 
 const RealCompetitorDashboard = () => {
@@ -11,6 +11,32 @@ const RealCompetitorDashboard = () => {
   const [customIntelligence, setCustomIntelligence] = useState({});
   const [driveFiles, setDriveFiles] = useState([]);
   const [isDriveConnected, setIsDriveConnected] = useState(false);
+
+  // Load competitors from database on app start
+  useEffect(() => {
+    const loadCompetitorsFromDatabase = async () => {
+      try {
+        console.log('Loading competitors from database...');
+        setAnalysisProgress('Loading competitors from database...');
+        
+        const response = await fetch('/api/competitors');
+        
+        if (response.ok) {
+          const dbCompetitors = await response.json();
+          console.log(`Loaded ${dbCompetitors.length} competitors from database`);
+          setCompetitors(dbCompetitors);
+          setAnalysisProgress(`Loaded ${dbCompetitors.length} competitors from database`);
+          setTimeout(() => setAnalysisProgress(''), 2000);
+        } else {
+          console.error('Failed to load competitors from database');
+        }
+      } catch (error) {
+        console.error('Error loading competitors:', error);
+      }
+    };
+
+    loadCompetitorsFromDatabase();
+  }, []);
   
   // Form states
   const [competitorUrl, setCompetitorUrl] = useState('');
@@ -268,13 +294,36 @@ Respond ONLY with valid JSON. No additional text or explanation.`
         throw new Error('Invalid competitors data structure');
       }
       
-      const competitorsWithIds = competitorsData.competitors.map((comp, index) => ({
-        ...comp,
-        id: index + 1
-      }));
+      console.log('Saving competitors to database...');
+      setAnalysisProgress('Saving competitors to database...');
       
-      setCompetitors(competitorsWithIds);
-      setAnalysisProgress(`✅ Successfully discovered ${competitorsWithIds.length} competitors via Anthropic API!`);
+      // Save new competitors to database
+      const saveResponse = await fetch('/api/competitors', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(competitorsData.competitors)
+      });
+
+      if (saveResponse.ok) {
+        const saveResult = await saveResponse.json();
+        console.log(`Saved ${saveResult.inserted} new competitors to database`);
+        setAnalysisProgress(`Saved ${saveResult.inserted} new competitors to database`);
+        
+        // Reload all competitors from database
+        console.log('Loading competitors from database...');
+        const loadResponse = await fetch('/api/competitors');
+        if (loadResponse.ok) {
+          const allCompetitors = await loadResponse.json();
+          console.log(`Loaded ${allCompetitors.length} competitors from database`);
+          setCompetitors(allCompetitors);
+        }
+      } else {
+        console.error('Failed to save to database');
+      }
+      
+      setAnalysisProgress(`✅ Successfully discovered and saved competitors via Anthropic API!`);
       
       setTimeout(() => setAnalysisProgress(''), 3000);
       
@@ -522,9 +571,34 @@ Respond ONLY with valid JSON.`
       responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
       
       const newCompetitor = JSON.parse(responseText);
-      setCompetitors(prev => [...prev, { ...newCompetitor, id: Date.now() }]);
+      
+      console.log('Saving new competitor to database...');
+      setAnalysisProgress('Saving new competitor to database...');
+      
+      // Save to database
+      const saveResponse = await fetch('/api/competitors', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([newCompetitor])
+      });
+
+      if (saveResponse.ok) {
+        const saveResult = await saveResponse.json();
+        console.log(`Saved ${saveResult.inserted} new competitor to database`);
+        
+        // Reload all competitors from database
+        const loadResponse = await fetch('/api/competitors');
+        if (loadResponse.ok) {
+          const allCompetitors = await loadResponse.json();
+          console.log(`Loaded ${allCompetitors.length} total competitors from database`);
+          setCompetitors(allCompetitors);
+        }
+      }
+      
       setCompetitorUrl('');
-      setAnalysisProgress('Competitor added successfully!');
+      setAnalysisProgress('Competitor added and saved to database!');
       
     } catch (error) {
       console.error('Error adding competitor:', error);
