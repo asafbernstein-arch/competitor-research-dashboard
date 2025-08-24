@@ -10,7 +10,8 @@
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
     "web-vitals": "^4.2.3",
-    "lucide-react": "^0.263.1"
+    "lucide-react": "^0.263.1",
+    "@supabase/supabase-js": "^2.39.3"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -42,6 +43,5 @@
   },
   "devDependencies": {
     "@babel/plugin-transform-private-property-in-object": "^7.24.7"
-    "@supabase/supabase-js": "^2.39.3"
   }
 }
