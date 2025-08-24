@@ -963,16 +963,27 @@ Respond ONLY with valid JSON.`
                               {competitor.threat}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => crawlCompetitor(competitor)}
-                              disabled={isAnalyzing}
-                              className="text-blue-600 hover:text-blue-900 inline-flex items-center gap-1"
-                            >
-                              <RefreshCw className={`w-3 h-3 ${isAnalyzing ? 'animate-spin' : ''}`} />
-                              Crawl Latest
-                            </button>
-                          </td>
+                        <td className="px-6 py-4">
+  <div className="flex items-center space-x-3">
+    <button
+      onClick={() => crawlCompetitor(competitor)}
+      disabled={isAnalyzing}
+      className="text-blue-600 hover:text-blue-900 inline-flex items-center gap-1"
+    >
+      <RefreshCw className={`w-3 h-3 ${isAnalyzing ? 'animate-spin' : ''}`} />
+      Crawl Latest
+    </button>
+    
+    <button
+      onClick={() => removeCompetitor(competitor.id, competitor.name)}
+      className="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1 rounded-md text-xs font-medium inline-flex items-center gap-1"
+      title="Remove competitor permanently"
+    >
+      <X className="w-3 h-3" />
+      Remove
+    </button>
+  </div>
+</td>
                         </tr>
                       ))}
                     </tbody>
