@@ -294,36 +294,53 @@ Respond ONLY with valid JSON. No additional text or explanation.`
         throw new Error('Invalid competitors data structure');
       }
       
+      // First, show the competitors immediately
+      const competitorsWithIds = competitorsData.competitors.map((comp, index) => ({
+        ...comp,
+        id: Date.now() + index
+      }));
+      setCompetitors(competitorsWithIds);
+      
       console.log('Saving competitors to database...');
       setAnalysisProgress('Saving competitors to database...');
       
-      // Save new competitors to database
-      const saveResponse = await fetch('/api/competitors', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(competitorsData.competitors)
-      });
+      try {
+        // Save new competitors to database
+        const saveResponse = await fetch('/api/competitors', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(competitorsData.competitors)
+        });
 
-      if (saveResponse.ok) {
-        const saveResult = await saveResponse.json();
-        console.log(`Saved ${saveResult.inserted} new competitors to database`);
-        setAnalysisProgress(`Saved ${saveResult.inserted} new competitors to database`);
-        
-        // Reload all competitors from database
-        console.log('Loading competitors from database...');
-        const loadResponse = await fetch('/api/competitors');
-        if (loadResponse.ok) {
-          const allCompetitors = await loadResponse.json();
-          console.log(`Loaded ${allCompetitors.length} competitors from database`);
-          setCompetitors(allCompetitors);
+        if (saveResponse.ok) {
+          const saveResult = await saveResponse.json();
+          console.log(`Saved ${saveResult.inserted} new competitors to database`);
+          setAnalysisProgress(`Saved ${saveResult.inserted} new competitors to database`);
+          
+          // Try to reload all competitors from database
+          try {
+            console.log('Loading competitors from database...');
+            const loadResponse = await fetch('/api/competitors');
+            if (loadResponse.ok) {
+              const allCompetitors = await loadResponse.json();
+              console.log(`Loaded ${allCompetitors.length} competitors from database`);
+              setCompetitors(allCompetitors);
+            } else {
+              console.log('Database load failed, keeping current competitors');
+            }
+          } catch (loadError) {
+            console.log('Database load error, keeping current competitors:', loadError);
+          }
+        } else {
+          console.error('Failed to save to database');
         }
-      } else {
-        console.error('Failed to save to database');
+      } catch (dbError) {
+        console.log('Database error, but competitors are still displayed:', dbError);
       }
       
-      setAnalysisProgress(`✅ Successfully discovered and saved competitors via Anthropic API!`);
+      setAnalysisProgress(`✅ Successfully discovered ${competitorsWithIds.length} competitors!`);
       
       setTimeout(() => setAnalysisProgress(''), 3000);
       
