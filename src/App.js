@@ -31,44 +31,50 @@ const RealCompetitorDashboard = () => {
 
   const testApiConnection = async () => {
     try {
-      setAnalysisProgress('Testing Claude.ai built-in API...');
+      setAnalysisProgress('Testing API connection via Vercel proxy...');
       
-      // Use Claude.ai's built-in API instead of external calls
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const apiKey = localStorage.getItem('anthropic_api_key');
+      if (!apiKey) {
+        throw new Error('Please add your API key first');
+      }
+
+      // Use your Vercel proxy instead of calling Anthropic directly
+      const response = await fetch("/api/claude", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-api-key": apiKey
         },
         body: JSON.stringify({
-          model: "claude-3-sonnet-20240229",
-          max_tokens: 50,
+          model: "claude-3-haiku-20240307",
+          max_tokens: 20,
           messages: [
             {
               role: "user",
-              content: "Reply with: API connection successful"
+              content: "Say hello"
             }
           ]
         })
       });
 
-      console.log('Response status:', response.status);
-      const responseText = await response.text();
-      console.log('Response:', responseText);
+      console.log('Proxy response status:', response.status);
 
       if (!response.ok) {
-        setAnalysisProgress(`❌ Claude.ai API Error ${response.status}`);
-        return;
+        const errorData = await response.json();
+        console.error('Proxy error details:', errorData);
+        throw new Error(`Proxy error: ${response.status} - ${errorData.error || 'Unknown error'}`);
       }
 
-      const data = JSON.parse(responseText);
-      console.log('Success:', data);
+      const data = await response.json();
+      console.log('API test successful:', data);
       
-      setAnalysisProgress('✅ Claude.ai API connection successful!');
+      setAnalysisProgress('✅ API connection successful via Vercel proxy!');
       setTimeout(() => setAnalysisProgress(''), 3000);
       
     } catch (error) {
       console.error('API test error:', error);
-      setAnalysisProgress(`❌ Connection error: ${error.message}`);
+      setAnalysisProgress(`❌ Connection failed: ${error.message}`);
+      setTimeout(() => setAnalysisProgress(''), 5000);
     }
   };
 
@@ -173,10 +179,10 @@ const RealCompetitorDashboard = () => {
     };
   };
 
-  // Real Claude API call for competitor discovery using Vercel proxy
+  // Real Claude API call for competitor discovery
   const discoverCompetitors = async () => {
     setIsAnalyzing(true);
-    setAnalysisProgress('Calling Anthropic API via Vercel proxy...');
+    setAnalysisProgress('Calling Anthropic API...');
 
     try {
       const apiKey = localStorage.getItem('anthropic_api_key');
@@ -184,10 +190,8 @@ const RealCompetitorDashboard = () => {
         throw new Error('Please configure your API key first');
       }
 
-      // Replace YOUR_VERCEL_URL with your actual Vercel deployment URL
-      const VERCEL_API_URL = 'https://your-app-name.vercel.app/api/claude';
-      
-      const response = await fetch(VERCEL_API_URL, {
+      // Use your Vercel API proxy instead of calling Anthropic directly
+      const response = await fetch("/api/claude", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -234,12 +238,13 @@ Respond ONLY with valid JSON. No additional text or explanation.`
         })
       });
 
-      console.log('Vercel proxy response status:', response.status);
+      console.log('API response status:', response.status);
+      console.log('API response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Proxy error:', errorData);
-        throw new Error(`Proxy error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+        console.error('API error:', errorData);
+        throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
       }
 
       const data = await response.json();
@@ -250,13 +255,14 @@ Respond ONLY with valid JSON. No additional text or explanation.`
       }
       
       let responseText = data.content[0].text;
-      console.log('Raw API response:', responseText);
+      console.log('Raw API response text:', responseText);
       
       // Clean up response to extract JSON
       responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      console.log('Cleaned response:', responseText);
+      console.log('Cleaned response text:', responseText);
       
       const competitorsData = JSON.parse(responseText);
+      console.log('Parsed competitors data:', competitorsData);
       
       if (!competitorsData.competitors || !Array.isArray(competitorsData.competitors)) {
         throw new Error('Invalid competitors data structure');
@@ -273,7 +279,7 @@ Respond ONLY with valid JSON. No additional text or explanation.`
       setTimeout(() => setAnalysisProgress(''), 3000);
       
     } catch (error) {
-      console.error('API Error:', error);
+      console.error('Full error details:', error);
       setAnalysisProgress(`❌ API Error: ${error.message}`);
       setTimeout(() => setAnalysisProgress(''), 5000);
     } finally {
