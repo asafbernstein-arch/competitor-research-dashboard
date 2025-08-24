@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, BarChart3, TrendingUp, Globe, AlertCircle, CheckCircle, ArrowUpRight, Download, RefreshCw, Plus, Settings, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, BarChart3, TrendingUp, Globe, AlertCircle, CheckCircle, ArrowUpRight, Download, RefreshCw, Plus, Settings } from 'lucide-react';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -49,8 +49,6 @@ const Dashboard = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [selectedCompetitors, setSelectedCompetitors] = useState([]);
-  const [showComparison, setShowComparison] = useState(false);
   const [newCompetitorUrl, setNewCompetitorUrl] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [analysisData, setAnalysisData] = useState(null);
