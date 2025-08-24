@@ -1,4 +1,4 @@
-// api/scrape.js - Universal Competitive Intelligence Scraper
+// api/scrape.js - Enhanced Universal Competitive Intelligence Scraper
 const cheerio = require('cheerio');
 
 // Rate limiting store
@@ -49,10 +49,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log(`🌐 Universal scraping ${type}: ${url}`);
+    console.log(`🌐 Enhanced scraping ${type}: ${url}`);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
 
     const response = await fetch(url, {
       method: 'GET',
@@ -75,9 +75,10 @@ export default async function handler(req, res) {
     const html = await response.text();
     const $ = cheerio.load(html);
     
-    // Extract comprehensive competitive intelligence
-    const intelligence = extractCompetitiveIntelligence($, url, type);
+    // Extract comprehensive competitive intelligence with JavaScript parsing
+    const intelligence = extractEnhancedIntelligence($, html, url, type);
 
+    // Return enhanced response
     res.status(200).json({
       success: true,
       scrapedSuccessfully: true,
@@ -92,25 +93,25 @@ export default async function handler(req, res) {
       metadata: {
         description: intelligence.content.description,
         wordCount: intelligence.metadata.wordCount,
-        changeIndicators: intelligence.metadata.changeIndicators
+        changeIndicators: intelligence.metadata.changeIndicators,
+        extractionMethods: intelligence.metadata.extractionMethods
       },
 
-      // New comprehensive intelligence data
+      // Enhanced intelligence data
       intelligence: intelligence,
       
-      // Quick access to key data
-      pricing: intelligence.pricing,
-      features: intelligence.features,
-      positioning: intelligence.positioning,
-      competitive: intelligence.competitive,
-      integrations: intelligence.features.integrations,
+      // Quick access to key competitive data
+      actualPricing: intelligence.pricing.actualPrices,
+      actualContent: intelligence.content.actualFindings,
+      liveData: intelligence.liveData,
+      competitiveThreats: intelligence.competitive.immediateThreats,
       
       // Analysis summary
       summary: generateIntelligenceSummary(intelligence)
     });
 
   } catch (error) {
-    console.error('❌ Universal scraping error:', error);
+    console.error('❌ Enhanced scraping error:', error);
     res.status(500).json({
       success: false,
       scrapedSuccessfully: false,
@@ -122,288 +123,304 @@ export default async function handler(req, res) {
   }
 }
 
-// Universal competitive intelligence extractor
-function extractCompetitiveIntelligence($, url, pageType) {
-  // Remove noise
-  $('script, style, nav, footer, header, .cookie-banner, .popup, .modal, .advertisement').remove();
+// Enhanced intelligence extraction with JavaScript content parsing
+function extractEnhancedIntelligence($, rawHtml, url, pageType) {
+  // Remove noise elements
+  $('script, style, nav, footer, header, .cookie-banner, .popup, .modal').remove();
   
   const intelligence = {
     url,
     pageType,
     timestamp: new Date().toISOString(),
-    pricing: { plans: [], prices: [], model: '', billingOptions: [] },
-    features: { core: [], integrations: [], capabilities: [], technical: [] },
-    positioning: { target: '', messaging: '', differentiators: [], marketClaims: [] },
-    company: { size: '', funding: '', customers: [], teamSize: '' },
-    technical: { apis: [], platforms: [], security: [], compliance: [] },
-    competitive: { strengths: [], weaknesses: [], threats: [], advantages: [] },
-    content: { title: '', description: '', keyPoints: '', headlines: [] },
-    metadata: { wordCount: 0, lastModified: '', changeIndicators: [], extractionMethods: [] }
+    pricing: { 
+      actualPrices: [], 
+      plans: [], 
+      model: '', 
+      isGated: false,
+      gatedReason: '',
+      jsExtractedPrices: []
+    },
+    features: { core: [], integrations: [], capabilities: [] },
+    positioning: { target: '', messaging: '', differentiators: [] },
+    company: { customers: [], funding: '', size: '' },
+    competitive: { strengths: [], weaknesses: [], immediateThreats: [] },
+    content: { 
+      title: '', 
+      description: '', 
+      keyPoints: '',
+      actualFindings: []
+    },
+    liveData: {
+      javascriptData: [],
+      apiEndpoints: [],
+      dataLayers: []
+    },
+    metadata: { 
+      wordCount: 0, 
+      extractionMethods: [],
+      javascriptParsed: false
+    }
   };
 
-  // Extract title and basic info
+  // Extract basic content
   intelligence.content.title = $('title').text().trim() || $('h1').first().text().trim();
   intelligence.content.description = $('meta[name="description"]').attr('content') || '';
 
-  // Run all extraction modules
+  // ENHANCED: Parse JavaScript content for pricing
+  parseJavaScriptContent(rawHtml, intelligence);
+  
+  // Standard HTML extraction
   extractPricingIntelligence($, intelligence);
   extractFeatureIntelligence($, intelligence);
-  extractTechnicalIntelligence($, intelligence);
-  extractPositioningIntelligence($, intelligence);
-  extractCompanyIntelligence($, intelligence);
-  extractCompetitiveThreats($, intelligence);
+  extractCompetitiveIntelligence($, intelligence);
   extractContentIntelligence($, intelligence);
   
   return intelligence;
 }
 
-function extractPricingIntelligence($, intel) {
-  const prices = [];
-  const plans = [];
-  const billingOptions = [];
+// NEW: Parse JavaScript for pricing data
+function parseJavaScriptContent(rawHtml, intel) {
+  intel.metadata.extractionMethods.push('JavaScript content parsing');
   
-  $('*').each((i, el) => {
-    if (i > 2500) return false;
-    const text = $(el).text().trim();
-    if (text.length < 5 || text.length > 400) return;
+  try {
+    // Look for common JavaScript data patterns
+    const jsPatterns = [
+      // Salesforce-style data objects
+      /var\s+wpdata\s*=\s*({.*?});/s,
+      /window\.wpdata\s*=\s*({.*?});/s,
+      
+      // Generic pricing data patterns
+      /"price":\s*"?(\d+)"?/g,
+      /"amount":\s*"?(\d+)"?/g,
+      /price["\']?\s*:\s*["\']?(\$?\d+(?:,\d+)*(?:\.\d{2})?)["\']?/g,
+      
+      // Product/plan data
+      /products?\s*:\s*\[(.*?)\]/s,
+      /plans?\s*:\s*\[(.*?)\]/s
+    ];
+
+    let foundJsData = false;
+
+    jsPatterns.forEach((pattern, index) => {
+      const matches = rawHtml.match(pattern);
+      if (matches) {
+        foundJsData = true;
+        intel.metadata.javascriptParsed = true;
+        
+        if (index < 2 && matches[1]) { // wpdata patterns
+          try {
+            const jsonData = JSON.parse(matches[1]);
+            parseWpData(jsonData, intel);
+          } catch (parseError) {
+            intel.metadata.extractionMethods.push(`wpdata parse failed: ${parseError.message}`);
+          }
+        } else if (index >= 2) { // price patterns
+          matches.forEach(match => {
+            const priceValue = match.match(/(\d+)/)?.[1];
+            if (priceValue) {
+              intel.pricing.jsExtractedPrices.push({
+                amount: priceValue,
+                source: 'javascript-regex',
+                pattern: `pattern-${index}`
+              });
+            }
+          });
+        }
+      }
+    });
+
+    intel.metadata.extractionMethods.push(`JavaScript parsing: ${foundJsData ? 'successful' : 'no data found'}`);
     
-    // Enhanced price detection
-    const priceRegex = /(\$\d+(?:[,\.]\d+)*(?:\.\d{2})?|\d+\s*USD|€\d+|£\d+|free|custom|contact)/gi;
-    const priceMatches = text.match(priceRegex);
-    
-    if (priceMatches) {
-      prices.push({
-        amount: priceMatches[0],
-        context: text,
-        billing: text.match(/(month|annual|year|user|seat)/i)?.[0] || 'unknown',
-        element: el.tagName
-      });
-    }
-    
-    // Plan detection with features
-    if (text.match(/\b(free|trial|starter|basic|standard|professional?|business|enterprise|premium|pro|plus|advanced|ultimate|team|individual)\b/gi)) {
-      if (text.length < 200) {
-        const planFeatures = extractNearbyFeatures($(el), $);
-        plans.push({
-          name: text.substring(0, 100),
-          features: planFeatures,
-          priceContext: findNearbyPrice($(el), $)
-        });
+  } catch (error) {
+    intel.metadata.extractionMethods.push(`JavaScript parsing failed: ${error.message}`);
+  }
+}
+
+// Parse Salesforce-style wpdata objects
+function parseWpData(wpdata, intel) {
+  try {
+    // Look for pricing information in nested structures
+    function searchForPricing(obj, path = '') {
+      if (!obj || typeof obj !== 'object') return;
+      
+      for (const [key, value] of Object.entries(obj)) {
+        const currentPath = path ? `${path}.${key}` : key;
+        
+        // Look for price-related keys
+        if (key.toLowerCase().includes('price') && (typeof value === 'string' || typeof value === 'number')) {
+          const priceMatch = String(value).match(/(\d+)/);
+          if (priceMatch) {
+            intel.pricing.actualPrices.push({
+              amount: priceMatch[1],
+              currency: String(value).match(/(USD|EUR|GBP|\$|€|£)/)?.[0] || 'EUR',
+              context: `JavaScript: ${currentPath}`,
+              source: 'javascript',
+              billing: 'monthly'
+            });
+          }
+        }
+        
+        // Look for amount fields
+        if (key.toLowerCase() === 'amount' && (typeof value === 'string' || typeof value === 'number')) {
+          const amountMatch = String(value).match(/(\d+)/);
+          if (amountMatch) {
+            intel.pricing.actualPrices.push({
+              amount: amountMatch[1],
+              currency: 'EUR',
+              context: `JavaScript amount: ${currentPath}`,
+              source: 'javascript',
+              billing: 'monthly'
+            });
+          }
+        }
+        
+        // Look for product/plan information
+        if ((key.toLowerCase().includes('product') || key.toLowerCase().includes('plan')) && 
+            value && typeof value === 'object') {
+          
+          if (value.headline || value.name) {
+            const planName = value.headline || value.name;
+            const features = [];
+            
+            // Extract features if available
+            if (value.feature_list && Array.isArray(value.feature_list)) {
+              features.push(...value.feature_list.map(f => f.description || f.name || f).filter(Boolean));
+            }
+            
+            intel.pricing.plans.push({
+              name: planName,
+              features: features,
+              source: 'javascript'
+            });
+          }
+        }
+        
+        // Recursively search nested objects and arrays
+        if (typeof value === 'object') {
+          searchForPricing(value, currentPath);
+        }
       }
     }
     
-    // Billing options
-    if (text.match(/\b(monthly|annual|yearly|pay\s*as\s*you\s*go|usage\s*based)\b/gi)) {
-      billingOptions.push(text.substring(0, 80));
+    searchForPricing(wpdata);
+    intel.liveData.javascriptData.push('wpdata object parsed successfully');
+    
+  } catch (error) {
+    intel.metadata.extractionMethods.push(`wpdata parsing failed: ${error.message}`);
+  }
+}
+
+// Enhanced pricing extraction
+function extractPricingIntelligence($, intel) {
+  const prices = [];
+  const bodyText = $('body').text().toLowerCase();
+  
+  // Check if pricing is gated
+  const gatedIndicators = ['contact sales', 'get a quote', 'request pricing', 'talk to sales'];
+  const isGated = gatedIndicators.some(indicator => bodyText.includes(indicator));
+  
+  intel.pricing.isGated = isGated;
+  if (isGated) {
+    intel.pricing.gatedReason = 'Contact sales required';
+    intel.metadata.extractionMethods.push('Pricing detected as gated');
+  }
+
+  // Extract visible prices from HTML
+  $('*').each((i, el) => {
+    if (i > 2000) return false;
+    const text = $(el).text().trim();
+    if (text.length < 5 || text.length > 300) return;
+    
+    const priceMatch = text.match(/(\$\d+(?:,\d+)*(?:\.\d{2})?|€\d+(?:,\d+)*(?:\.\d{2})?|£\d+(?:,\d+)*(?:\.\d{2})?)/g);
+    if (priceMatch) {
+      prices.push({
+        amount: priceMatch[0],
+        context: text,
+        billing: text.match(/(month|annual|year|user|seat)/i)?.[0] || 'unknown',
+        source: 'html'
+      });
     }
   });
-  
-  intel.pricing.prices = [...new Map(prices.map(p => [`${p.amount}-${p.billing}`, p])).values()];
-  intel.pricing.plans = plans.slice(0, 8);
-  intel.pricing.billingOptions = [...new Set(billingOptions)].slice(0, 5);
-  
-  // Detect pricing model
+
+  intel.pricing.actualPrices.push(...prices);
+  intel.metadata.extractionMethods.push(`HTML pricing extraction: ${prices.length} prices found`);
+}
+
+// Extract competitive intelligence
+function extractCompetitiveIntelligence($, intel) {
   const bodyText = $('body').text().toLowerCase();
-  if (bodyText.includes('per user') || bodyText.includes('per seat')) intel.pricing.model = 'per-user';
-  else if (bodyText.includes('usage based') || bodyText.includes('pay as you go')) intel.pricing.model = 'usage-based';
-  else if (bodyText.includes('flat rate') || bodyText.includes('unlimited users')) intel.pricing.model = 'flat-rate';
-  else intel.pricing.model = 'subscription';
   
-  intel.metadata.extractionMethods.push(`Pricing: Found ${prices.length} prices, ${plans.length} plans`);
+  // Immediate competitive threats
+  if (bodyText.includes('leader') || bodyText.includes('#1')) {
+    intel.competitive.immediateThreats.push('Claims market leadership');
+  }
+  if (bodyText.includes('ai') || bodyText.includes('artificial intelligence')) {
+    intel.competitive.immediateThreats.push('AI-powered features');
+  }
+  if (bodyText.includes('integration') || bodyText.includes('ecosystem')) {
+    intel.competitive.immediateThreats.push('Strong integration capabilities');
+  }
+  
+  intel.metadata.extractionMethods.push(`Competitive analysis: ${intel.competitive.immediateThreats.length} threats identified`);
 }
 
 function extractFeatureIntelligence($, intel) {
   const features = [];
   const integrations = [];
-  const capabilities = [];
-  const technical = [];
   
   $('*').each((i, el) => {
-    if (i > 3000) return false;
+    if (i > 2000) return false;
     const text = $(el).text().trim();
-    if (text.length < 8 || text.length > 250) return;
+    if (text.length < 10 || text.length > 200) return;
     
-    // Core features - CPQ/Sales specific
-    if (text.match(/\b(cpq|quote|proposal|contract|esignature|approval|workflow|automation|template|billing|invoicing|crm|pipeline)\b/gi)) {
+    // CPQ-specific features
+    if (text.match(/\b(cpq|quote|proposal|contract|billing|automation|workflow|crm|api|revenue|lifecycle|management)\b/gi)) {
       features.push(text);
     }
     
-    // Integration detection - comprehensive
-    if (text.match(/\b(salesforce|hubspot|pipedrive|dynamics|freshworks|zapier|slack|microsoft|google|adobe|docusign|zoom|teams|asana|jira)\b/gi)) {
+    // Integration detection
+    if (text.match(/\b(salesforce|hubspot|microsoft|google|adobe|zapier|dynamics|oracle|sap)\b/gi)) {
       integrations.push(text);
     }
-    
-    // Capabilities - action-oriented
-    if (text.match(/\b(create|generate|automate|integrate|manage|track|analyze|report|configure|customize|streamline|optimize)\b/gi) && text.length < 120) {
-      capabilities.push(text);
-    }
-    
-    // Technical features
-    if (text.match(/\b(api|webhook|sso|saml|oauth|rest|graphql|sdk|mobile\s*app|white\s*label)\b/gi)) {
-      technical.push(text);
-    }
   });
   
-  intel.features.core = [...new Set(features)].slice(0, 20);
-  intel.features.integrations = [...new Set(integrations)].slice(0, 15);
-  intel.features.capabilities = [...new Set(capabilities)].slice(0, 15);
-  intel.features.technical = [...new Set(technical)].slice(0, 10);
-  
-  intel.metadata.extractionMethods.push(`Features: ${features.length} core, ${integrations.length} integrations`);
-}
-
-function extractTechnicalIntelligence($, intel) {
-  const bodyText = $('body').text().toLowerCase();
-  
-  // API capabilities
-  if (bodyText.includes('rest api') || bodyText.includes('api')) intel.technical.apis.push('REST API');
-  if (bodyText.includes('webhook')) intel.technical.apis.push('Webhooks');
-  if (bodyText.includes('graphql')) intel.technical.apis.push('GraphQL');
-  if (bodyText.includes('sdk')) intel.technical.apis.push('SDK');
-  
-  // Platform support
-  if (bodyText.includes('cloud') || bodyText.includes('saas')) intel.technical.platforms.push('Cloud/SaaS');
-  if (bodyText.includes('on-premise') || bodyText.includes('on-prem')) intel.technical.platforms.push('On-Premise');
-  if (bodyText.includes('mobile app') || bodyText.includes('ios') || bodyText.includes('android')) intel.technical.platforms.push('Mobile');
-  
-  // Security & Compliance
-  if (bodyText.includes('sso') || bodyText.includes('single sign')) intel.technical.security.push('SSO');
-  if (bodyText.includes('saml')) intel.technical.security.push('SAML');
-  if (bodyText.includes('oauth')) intel.technical.security.push('OAuth');
-  if (bodyText.includes('gdpr')) intel.technical.compliance.push('GDPR');
-  if (bodyText.includes('hipaa')) intel.technical.compliance.push('HIPAA');
-  if (bodyText.includes('soc 2') || bodyText.includes('soc2')) intel.technical.compliance.push('SOC 2');
-}
-
-function extractPositioningIntelligence($, intel) {
-  const bodyText = $('body').text().toLowerCase();
-  
-  // Target market detection
-  if ((bodyText.includes('enterprise') || bodyText.includes('large')) && bodyText.includes('organization')) {
-    intel.positioning.target = 'Enterprise';
-  } else if (bodyText.includes('small business') || bodyText.includes('smb')) {
-    intel.positioning.target = 'SMB';
-  } else if (bodyText.includes('mid-market') || bodyText.includes('medium business')) {
-    intel.positioning.target = 'Mid-Market';
-  } else {
-    intel.positioning.target = 'General';
-  }
-  
-  // Key messaging from headlines
-  const headlines = [];
-  $('h1, h2, h3, .hero, .tagline, .headline, .value-prop').each((i, el) => {
-    const text = $(el).text().trim();
-    if (text.length > 15 && text.length < 200) {
-      headlines.push(text);
-    }
-  });
-  intel.content.headlines = headlines.slice(0, 8);
-  intel.positioning.messaging = headlines.slice(0, 3).join(' | ');
-  
-  // Market claims
-  if (bodyText.includes('leader') || bodyText.includes('#1') || bodyText.includes('leading')) {
-    intel.positioning.marketClaims.push('Market Leader');
-  }
-  if (bodyText.includes('award') || bodyText.includes('winner')) {
-    intel.positioning.marketClaims.push('Award Winner');
-  }
-}
-
-function extractCompanyIntelligence($, intel) {
-  const bodyText = $('body').text();
-  
-  // Customer count
-  const customerMatches = bodyText.match(/(\d+[k]?\+?)\s*(customers?|companies|businesses|users)/gi) || [];
-  intel.company.customers = customerMatches.slice(0, 5);
-  
-  // Team size indicators
-  const teamMatches = bodyText.match(/(\d+[k]?\+?)\s*(employees|team members|people)/gi) || [];
-  intel.company.teamSize = teamMatches[0] || '';
-  
-  // Funding indicators
-  if (bodyText.match(/series [abc]|funded|raised|\$\d+[m|b]/i)) {
-    intel.company.funding = 'VC-Backed';
-  } else if (bodyText.match(/public|nasdaq|nyse|ipo/i)) {
-    intel.company.funding = 'Public Company';
-  } else {
-    intel.company.funding = 'Unknown';
-  }
-}
-
-function extractCompetitiveThreats($, intel) {
-  const bodyText = $('body').text().toLowerCase();
-  
-  // Strength indicators
-  if (bodyText.includes('native integration') || bodyText.includes('deep integration')) {
-    intel.competitive.strengths.push('Native CRM Integration');
-  }
-  if (bodyText.includes('no-code') || bodyText.includes('easy setup')) {
-    intel.competitive.strengths.push('Ease of Implementation');
-  }
-  if (bodyText.includes('ai') || bodyText.includes('artificial intelligence') || bodyText.includes('machine learning')) {
-    intel.competitive.strengths.push('AI/ML Capabilities');
-  }
-  
-  // Competitive advantages
-  if (bodyText.includes('fastest') || bodyText.includes('quickest')) {
-    intel.competitive.advantages.push('Speed/Performance');
-  }
-  if (bodyText.includes('most secure') || bodyText.includes('bank-grade')) {
-    intel.competitive.advantages.push('Security');
-  }
+  intel.features.core = [...new Set(features)].slice(0, 15);
+  intel.features.integrations = [...new Set(integrations)].slice(0, 10);
 }
 
 function extractContentIntelligence($, intel) {
-  // Get clean, comprehensive content
   const content = $('body').text().replace(/\s+/g, ' ').trim();
-  intel.content.keyPoints = content.substring(0, 3000); // Increased for more context
+  intel.content.keyPoints = content.substring(0, 2000);
   intel.metadata.wordCount = content.split(' ').length;
   
-  // Change indicators
-  const changeWords = ['new', 'updated', 'recently', 'now', 'latest', 'introducing', '2024', '2025'];
-  changeWords.forEach(word => {
-    if (content.toLowerCase().includes(word)) {
-      intel.metadata.changeIndicators.push(word);
+  // Actual findings with context
+  const headlines = [];
+  $('h1, h2, h3').each((i, el) => {
+    const text = $(el).text().trim();
+    if (text.length > 10 && text.length < 150) {
+      headlines.push(text);
     }
   });
   
-  // Last modified detection
-  const lastModified = $('meta[name="last-modified"]').attr('content') || 
-                      $('meta[property="article:modified_time"]').attr('content') || 
-                      '';
-  intel.metadata.lastModified = lastModified;
-}
-
-// Helper functions
-function extractNearbyFeatures($element, $) {
-  const features = [];
-  $element.siblings().find('li, .feature, .benefit').each((i, el) => {
-    if (i > 8) return false;
-    const feature = $(el).text().trim();
-    if (feature.length > 8 && feature.length < 120) {
-      features.push(feature);
-    }
-  });
-  return features.slice(0, 6);
-}
-
-function findNearbyPrice($element, $) {
-  const nearby = $element.parent().text() + ' ' + $element.siblings().text();
-  const priceMatch = nearby.match(/\$\d+[\d,]*(?:\.\d{2})?/);
-  return priceMatch ? priceMatch[0] : '';
+  intel.content.actualFindings = headlines.slice(0, 5).map(headline => ({
+    type: 'headline',
+    content: headline,
+    source: intel.url,
+    insight: 'Key messaging point'
+  }));
 }
 
 function generateIntelligenceSummary(intel) {
+  const totalJsPrices = Array.isArray(intel.pricing.jsExtractedPrices) ? intel.pricing.jsExtractedPrices.length : 0;
+  
   return {
-    totalPrices: intel.pricing.prices.length,
-    totalPlans: intel.pricing.plans.length,
+    totalPricesFound: intel.pricing.actualPrices.length + totalJsPrices,
+    pricingAvailable: !intel.pricing.isGated || intel.pricing.actualPrices.length > 0 || totalJsPrices > 0,
+    gatedPricing: intel.pricing.isGated,
     coreFeatures: intel.features.core.length,
     integrations: intel.features.integrations.length,
-    targetMarket: intel.positioning.target,
-    pricingModel: intel.pricing.model,
-    hasAPI: intel.technical.apis.length > 0,
-    changeIndicators: intel.metadata.changeIndicators.length,
-    threatLevel: intel.competitive.strengths.length > 2 ? 'High' : 
-                intel.competitive.strengths.length > 0 ? 'Medium' : 'Low'
+    immediateThreats: intel.competitive.immediateThreats.length,
+    javascriptParsed: intel.metadata.javascriptParsed,
+    extractionMethods: intel.metadata.extractionMethods.length
   };
 }
