@@ -1,4 +1,3 @@
-cat > test-scraping.js << 'EOF'
 // Simple test for the scraping API
 const scrapeModule = require('./api/scrape.js');
 
