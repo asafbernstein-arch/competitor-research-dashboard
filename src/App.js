@@ -198,7 +198,7 @@ const RealCompetitorDashboard = () => {
           "x-api-key": apiKey
         },
         body: JSON.stringify({
-          model: "claude-3-sonnet-20240229",
+          model: "claude-3-haiku-20240307", // Use same working model as test
           max_tokens: 3000,
           messages: [
             {
@@ -312,7 +312,7 @@ Respond ONLY with valid JSON. No additional text or explanation.`
         method: "POST",
         headers: getApiHeaders(),
         body: JSON.stringify({
-          model: "claude-3-sonnet-20240229",
+          model: "claude-3-haiku-20240307", // Use working model
           max_tokens: 4000,
           messages: [
             {
@@ -396,7 +396,7 @@ Base analysis on real competitive intelligence. Be specific and actionable. Resp
         method: "POST",
         headers: getApiHeaders(),
         body: JSON.stringify({
-          model: "claude-3-sonnet-20240229",
+          model: "claude-3-haiku-20240307", // Use working model
           max_tokens: 2000,
           messages: [
             {
