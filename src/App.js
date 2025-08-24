@@ -705,6 +705,39 @@ Respond ONLY with valid JSON.`
     URL.revokeObjectURL(url);
   };
 
+  // Remove competitor function
+  const removeCompetitor = async (competitorId, competitorName) => {
+    if (!window.confirm(`Are you sure you want to remove "${competitorName}" from the competitors list?`)) {
+      return;
+    }
+
+    try {
+      setAnalysisProgress(`Removing ${competitorName}...`);
+      
+      // Remove from database
+      const response = await fetch(`/api/competitors?id=${competitorId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Competitor deleted from database:', result);
+        
+        // Remove from local state
+        setCompetitors(prev => prev.filter(comp => comp.id !== competitorId));
+        setAnalysisProgress(`✅ Removed ${competitorName} successfully`);
+        
+        setTimeout(() => setAnalysisProgress(''), 2000);
+      } else {
+        throw new Error(`Failed to delete competitor: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error removing competitor:', error);
+      setAnalysisProgress(`❌ Error removing ${competitorName}: ${error.message}`);
+      setTimeout(() => setAnalysisProgress(''), 5000);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
