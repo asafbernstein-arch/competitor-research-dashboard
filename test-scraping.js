@@ -1,4 +1,4 @@
-cat > test-scraping-fixed.js << 'EOF'
+cat > test-scraping.js << 'EOF'
 // Node.js compatible test for scraping functionality
 const cheerio = require('cheerio');
 
