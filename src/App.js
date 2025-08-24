@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, BarChart3, TrendingUp, Globe, AlertCircle, CheckCircle, ArrowUpRight, Download, RefreshCw, Plus, Settings, FileText, Eye, Target, Brain, Zap, Upload } from 'lucide-react';
+import { Search, BarChart3, TrendingUp, Globe, AlertCircle, CheckCircle, ArrowUpRight, Download, RefreshCw, Plus, Settings, FileText, Eye, Target, Brain, Zap, Upload, X } from 'lucide-react';
 
 const RealCompetitorDashboard = () => {
   const [activeTab, setActiveTab] = useState('discover');
