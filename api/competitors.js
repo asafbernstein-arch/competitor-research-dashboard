@@ -69,6 +69,30 @@ export default async function handler(req, res) {
         }
         break;
 
+      case 'DELETE':
+        // Delete competitor
+        const deleteId = req.query.id;
+        console.log(`Attempting to delete competitor with id: ${deleteId}`);
+        
+        if (!deleteId) {
+          return res.status(400).json({ error: 'Competitor ID is required' });
+        }
+
+        const { data: deletedData, error: deleteError } = await supabase
+          .from('competitors')
+          .delete()
+          .eq('id', deleteId)
+          .select();
+
+        if (deleteError) {
+          console.error('Supabase delete error:', deleteError);
+          throw deleteError;
+        }
+
+        console.log(`Successfully deleted competitor: ${deletedData?.[0]?.name || deleteId}`);
+        res.json({ success: true, deleted: deletedData?.[0] || { id: deleteId } });
+        break;
+
       default:
         res.status(405).json({ error: 'Method not allowed' });
     }
