@@ -2,6 +2,9 @@
   "functions": {
     "api/claude.js": {
       "maxDuration": 30
+    },
+    "api/scrape.js": {
+      "maxDuration": 30
     }
   },
   "headers": [
@@ -13,5 +16,9 @@
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type, x-api-key" }
       ]
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "SCRAPING_ENABLED": "true"
+  }
 }
