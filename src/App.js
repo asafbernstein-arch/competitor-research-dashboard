@@ -131,7 +131,7 @@ const RealCompetitorDashboard = () => {
     ]
   };
 
-  // Generate battle card for competitor
+  // ENHANCED: Generate battle card with dynamic scraping data
   const generateBattleCard = async (competitor) => {
     setIsAnalyzing(true);
     setAnalysisProgress(`Generating battle card for ${competitor.name}...`);
@@ -142,9 +142,54 @@ const RealCompetitorDashboard = () => {
         throw new Error('Please configure your API key first');
       }
 
-      // Get existing crawl data for this competitor
-      const existingCrawlData = crawlResults.filter(result => result.competitor === competitor.name);
+      // Get the LATEST crawl data for this competitor
+      const latestCrawlData = crawlResults
+        .filter(result => result.competitor === competitor.name)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]; // Get most recent
+
       const customIntel = customIntelligence[competitor.name] || "";
+
+      // Prepare comprehensive scraped intelligence
+      const scrapedIntelligence = {
+        competitorName: competitor.name,
+        latestCrawl: latestCrawlData || null,
+        
+        // Extract pricing data from latest crawl
+        pricingData: latestCrawlData ? {
+          actualPrices: latestCrawlData.actualPricing || [],
+          jsExtractedPrices: latestCrawlData.intelligence?.pricing?.jsExtractedPrices || [],
+          allPrices: latestCrawlData.intelligence?.pricing?.actualPrices || [],
+          isGated: latestCrawlData.intelligence?.pricing?.isGated || false,
+          pricingModel: latestCrawlData.intelligence?.pricing?.model || 'unknown',
+          plans: latestCrawlData.intelligence?.pricing?.plans || []
+        } : null,
+        
+        // Extract feature data
+        featureData: latestCrawlData ? {
+          coreFeatures: latestCrawlData.intelligence?.features?.core || [],
+          integrations: latestCrawlData.intelligence?.features?.integrations || [],
+          capabilities: latestCrawlData.intelligence?.features?.capabilities || []
+        } : null,
+        
+        // Extract competitive threats
+        competitiveData: latestCrawlData ? {
+          immediateThreats: latestCrawlData.competitiveThreats || [],
+          strengths: latestCrawlData.intelligence?.competitive?.strengths || [],
+          weaknesses: latestCrawlData.intelligence?.competitive?.weaknesses || []
+        } : null,
+        
+        // Extract content findings
+        contentData: latestCrawlData ? {
+          actualFindings: latestCrawlData.actualContent || [],
+          headlines: latestCrawlData.intelligence?.content?.actualFindings || [],
+          positioning: latestCrawlData.intelligence?.positioning || {}
+        } : null,
+        
+        // Meta information
+        lastScraped: latestCrawlData?.timestamp || 'Never scraped',
+        scrapingSuccess: latestCrawlData?.scrapedSuccessfully || false,
+        extractionMethods: latestCrawlData?.metadata?.extractionMethods || []
+      };
 
       const response = await fetch("/api/claude", {
         method: "POST",
@@ -154,7 +199,7 @@ const RealCompetitorDashboard = () => {
         },
         body: JSON.stringify({
           model: "claude-3-haiku-20240307",
-          max_tokens: 3000,
+          max_tokens: 4000,
           messages: [
             {
               role: "user",
@@ -163,71 +208,97 @@ const RealCompetitorDashboard = () => {
 DealHub.io Baseline:
 ${JSON.stringify(dealHubBaseline, null, 2)}
 
-Competitor Data:
+Competitor Basic Info:
 ${JSON.stringify(competitor, null, 2)}
 
-Recent Crawl Intelligence:
-${JSON.stringify(existingCrawlData, null, 2)}
+LIVE SCRAPED COMPETITIVE INTELLIGENCE:
+${JSON.stringify(scrapedIntelligence, null, 2)}
 
-Custom Intelligence:
+Custom Intelligence Notes:
 ${customIntel}
+
+CRITICAL INSTRUCTIONS FOR PRICING:
+1. Use ONLY the live scraped pricing data from scrapedIntelligence.pricingData
+2. If actualPrices array has data, extract the specific amounts and currencies
+3. If jsExtractedPrices has data, use those JavaScript-extracted prices
+4. If isGated is true, mention "Contact Sales" pricing model
+5. Show EXACT pricing found, not generic ranges
+6. Compare specific prices to DealHub's pricing model
+
+CRITICAL INSTRUCTIONS FOR FEATURES:
+1. Use coreFeatures from scrapedIntelligence.featureData for actual product capabilities
+2. Use integrations array for CRM/platform connections found
+3. Use immediateThreats for competitive positioning
 
 Create a battle card in this EXACT JSON format:
 {
   "competitorName": "${competitor.name}",
+  "scrapingStatus": {
+    "lastScraped": "${scrapedIntelligence.lastScraped}",
+    "dataQuality": "excellent/good/limited/none",
+    "pricingFound": true/false,
+    "featuresFound": true/false
+  },
   "dealHubBaseline": {
-    "capabilities": ["capability1", "capability2"],
-    "keyStrengths": ["strength1", "strength2"],
+    "capabilities": ["Advanced CPQ Platform with Deal Orchestration", "Digital Sales Rooms for Buyer Engagement", "DealBoard for Deal Management"],
+    "keyStrengths": ["Native integrations with 4+ major CRMs", "Innovative Digital Sales Room concept", "Deep bi-directional CRM synchronization"],
     "crmIntegrations": {
-      "native": ["platform1", "platform2"],
-      "api": ["platform3", "platform4"],
-      "setup": "difficulty level"
+      "native": ["Salesforce", "HubSpot", "Microsoft Dynamics 365", "Freshworks CRM"],
+      "api": ["Pipedrive", "Other CRMs via API"],
+      "setup": "Easy for native integrations"
     },
-    "marketOpportunities": ["opportunity1", "opportunity2"],
-    "advantages": ["advantage1", "advantage2"]
+    "pricingRange": "$75-$200+ per user per month",
+    "advantages": ["4 native CRM integrations vs competitors' 1-2", "No-code setup", "Digital Sales Room innovation"]
   },
   "competitorProfile": {
-    "coreOfferings": ["offering1", "offering2"],
-    "keyDifferentiators": ["diff1", "diff2"],
+    "coreOfferings": [], // USE scrapedIntelligence.featureData.coreFeatures
+    "keyDifferentiators": [], // USE scrapedIntelligence.contentData.headlines
     "crmIntegrations": {
-      "native": ["platform1"],
+      "native": [], // USE scrapedIntelligence.featureData.integrations
       "quality": "Excellent/Good/Fair",
       "setup": "Easy/Medium/Hard"
     },
     "pricingStrategy": {
-      "model": "subscription model description",
-      "range": "price range",
-      "strategy": "positioning strategy"
-    },
-    "customerFeedback": {
-      "overallRating": "X.X/5.0",
-      "sentiment": "Positive/Mixed/Negative"
+      "model": "", // USE scrapedIntelligence.pricingData.pricingModel
+      "liveScrapedPricing": [], // USE scrapedIntelligence.pricingData.actualPrices with EXACT amounts
+      "jsExtractedPricing": [], // USE scrapedIntelligence.pricingData.jsExtractedPrices
+      "isGated": false, // USE scrapedIntelligence.pricingData.isGated
+      "range": "", // BUILD from actual scraped prices
+      "strategy": "",
+      "comparedToDealHub": "Higher/Lower/Similar based on actual prices found"
     }
   },
   "swotAnalysis": {
-    "strengths": ["strength1", "strength2"],
-    "weaknesses": ["weakness1", "weakness2"],  
-    "opportunities": ["opportunity1", "opportunity2"],
-    "threats": ["threat1", "threat2"]
+    "strengths": [], // USE scrapedIntelligence.competitiveData.strengths
+    "weaknesses": [], // USE scrapedIntelligence.competitiveData.weaknesses
+    "opportunities": ["DealHub opportunities based on competitor weaknesses"],
+    "threats": [] // USE scrapedIntelligence.competitiveData.immediateThreats
   },
   "competitiveAdvantages": [
     {
-      "area": "Integration Capabilities",
-      "dealHubAdvantage": "specific advantage description",
-      "competitorWeakness": "specific weakness"
+      "area": "Pricing",
+      "dealHubAdvantage": "Specific advantage based on scraped competitor pricing",
+      "competitorWeakness": "Based on actual scraped pricing data"
     }
   ],
   "recommendations": [
     {
-      "category": "Sales Strategy",
-      "recommendation": "specific actionable recommendation",
-      "talkingPoints": ["point1", "point2"]
+      "category": "Pricing Strategy",
+      "recommendation": "Based on actual scraped competitor prices",
+      "talkingPoints": ["Use real pricing comparison", "Highlight cost differences"]
     }
   ],
   "lastUpdated": "${new Date().toISOString()}"
 }
 
-Focus on creating a comprehensive comparison that highlights DealHub's advantages. Respond ONLY with valid JSON.`
+IMPORTANT: 
+- Only use ACTUAL scraped data from scrapedIntelligence object
+- If no pricing data was scraped, set pricingStrategy.liveScrapedPricing to []
+- If no feature data, set coreOfferings to ["Limited data available - requires manual research"]
+- Be specific about what data came from live scraping vs baseline assumptions
+- Show exact prices with currencies (e.g. "€200/User/Month")
+
+Respond ONLY with valid JSON.`
             }
           ]
         })
@@ -244,13 +315,21 @@ Focus on creating a comprehensive comparison that highlights DealHub's advantage
       
       const battleCard = JSON.parse(responseText);
       
-      // Save battle card
+      // Save battle card with scraping metadata
       setBattleCards(prev => ({
         ...prev,
-        [competitor.name]: battleCard
+        [competitor.name]: {
+          ...battleCard,
+          scrapingMetadata: {
+            lastScraped: latestCrawlData?.timestamp || 'Never',
+            dataQuality: latestCrawlData ? 'good' : 'limited',
+            scrapedPricing: scrapedIntelligence.pricingData?.actualPrices?.length > 0,
+            scrapedFeatures: scrapedIntelligence.featureData?.coreFeatures?.length > 0
+          }
+        }
       }));
       
-      setAnalysisProgress(`✅ Battle card generated for ${competitor.name}!`);
+      setAnalysisProgress(`✅ Battle card generated with live scraped data for ${competitor.name}!`);
       setTimeout(() => setAnalysisProgress(''), 3000);
       
     } catch (error) {
@@ -260,6 +339,123 @@ Focus on creating a comprehensive comparison that highlights DealHub's advantage
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // ENHANCED: Real web scraping with dynamic data extraction
+  const crawlCompetitor = async (competitor) => {
+    setIsAnalyzing(true);
+    setAnalysisProgress(`Starting enhanced web scraping of ${competitor.name}...`);
+
+    try {
+      setAnalysisProgress(`Scraping ${competitor.name} with JavaScript parsing...`);
+
+      // Call our enhanced scraping API
+      const response = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: competitor.url || getCompetitorPricingUrl(competitor.name),
+          type: 'Pricing Page'
+        })
+      });
+
+      if (response.ok) {
+        const scrapedData = await response.json();
+        
+        // Create enhanced crawl result with scraped data
+        const enhancedCrawlResult = {
+          competitor: competitor.name,
+          timestamp: new Date().toISOString(),
+          scrapedSuccessfully: scrapedData.scrapedSuccessfully,
+          
+          // Include all the scraped intelligence
+          intelligence: scrapedData.intelligence,
+          actualPricing: scrapedData.actualPricing,
+          actualContent: scrapedData.actualContent,
+          competitiveThreats: scrapedData.competitiveThreats,
+          liveData: scrapedData.liveData,
+          
+          // Summary data
+          summary: scrapedData.summary ? 
+            `Live scraping found ${scrapedData.summary.totalPricesFound} prices, ${scrapedData.summary.coreFeatures} features. JavaScript parsing: ${scrapedData.summary.javascriptParsed ? 'successful' : 'failed'}.` :
+            `Scraped ${competitor.name} - ${scrapedData.scrapedSuccessfully ? 'successful' : 'failed'}`,
+            
+          // Metadata
+          metadata: scrapedData.metadata,
+          
+          // For compatibility with existing UI
+          crawlSources: [{
+            sourceType: "Enhanced Web Scraping",
+            url: scrapedData.url,
+            scrapedSuccessfully: scrapedData.scrapedSuccessfully,
+            findings: scrapedData.actualContent ? scrapedData.actualContent.map(finding => ({
+              type: finding.type,
+              severity: "Medium",
+              title: finding.content.substring(0, 50),
+              description: finding.content,
+              impact: finding.insight,
+              changeDetected: false
+            })) : []
+          }]
+        };
+        
+        setCrawlResults(prev => [enhancedCrawlResult, ...prev]);
+        
+        setAnalysisProgress(`✅ Enhanced scraping completed for ${competitor.name}!`);
+        console.log('✅ Enhanced scraping successful:', enhancedCrawlResult);
+        
+      } else {
+        const errorData = await response.json();
+        throw new Error(`Scraping failed: ${errorData.error}`);
+      }
+      
+    } catch (error) {
+      console.error('Enhanced scraping error:', error);
+      
+      // Create fallback result
+      const fallbackResult = {
+        competitor: competitor.name,
+        timestamp: new Date().toISOString(),
+        scrapedSuccessfully: false,
+        summary: `Enhanced scraping of ${competitor.name} failed: ${error.message}`,
+        crawlSources: [{
+          sourceType: "Enhanced Web Scraping",
+          url: competitor.url,
+          scrapedSuccessfully: false,
+          findings: [{
+            type: "Error",
+            severity: "High",
+            title: "Scraping Failed",
+            description: `Could not scrape ${competitor.name}: ${error.message}`,
+            impact: "Limited competitive intelligence available",
+            changeDetected: false
+          }]
+        }]
+      };
+      
+      setCrawlResults(prev => [fallbackResult, ...prev]);
+      setAnalysisProgress(`❌ Enhanced scraping failed for ${competitor.name}: ${error.message}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Helper to get competitor pricing URLs
+  const getCompetitorPricingUrl = (competitorName) => {
+    const competitorUrls = {
+      'Salesforce Revenue Cloud': 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/pricing/',
+      'Salesforce RLM': 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/pricing/',
+      'Salesforce RCA': 'https://www.salesforce.com/eu/sales/revenue-lifecycle-management/pricing/',
+      'PandaDoc': 'https://www.pandadoc.com/pricing/',
+      'Proposify': 'https://www.proposify.com/pricing',
+      'HubSpot Sales Hub': 'https://www.hubspot.com/pricing/sales',
+      'Oracle CPQ': 'https://www.oracle.com/cx/pricing/',
+      'Subskribe': 'https://www.subskribe.com/pricing'
+    };
+    
+    return competitorUrls[competitorName] || '';
   };
 
   // Update battle card when new crawl data is available
@@ -281,6 +477,8 @@ Focus on creating a comprehensive comparison that highlights DealHub's advantage
     setSelectedBattleCard(competitorName);
     setShowBattleCard(true);
   };
+
+  // REST OF THE COMPONENT REMAINS THE SAME - keeping all other functions as they were
   const discoverCompetitors = async () => {
     setIsAnalyzing(true);
     setAnalysisProgress('Calling Anthropic API...');
@@ -505,193 +703,6 @@ Base analysis on real competitive intelligence. Be specific and actionable. Resp
       
     } catch (error) {
       setAnalysisProgress('Error in analysis. Please try again.');
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  // Enhanced competitor crawling with multiple sources
-  const crawlCompetitor = async (competitor) => {
-    setIsAnalyzing(true);
-    setAnalysisProgress(`Starting comprehensive crawl of ${competitor.name}...`);
-
-    try {
-      const apiKey = localStorage.getItem('anthropic_api_key');
-      if (!apiKey) {
-        throw new Error('Please configure your API key first');
-      }
-
-      // Define crawling targets based on competitor
-      const crawlTargets = getCrawlTargets(competitor);
-      setAnalysisProgress(`Crawling ${crawlTargets.length} sources for ${competitor.name}...`);
-
-      const response = await fetch("/api/claude", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey
-        },
-        body: JSON.stringify({
-          model: "claude-3-haiku-20240307",
-          max_tokens: 4000,
-          messages: [
-            {
-              role: "user",
-              content: `Conduct comprehensive competitive intelligence analysis for ${competitor.name} by analyzing multiple sources.
-
-CRAWL THESE SPECIFIC SOURCES:
-${JSON.stringify(crawlTargets, null, 2)}
-
-For each source, extract:
-
-1. MAIN PRODUCT PAGE ANALYSIS:
-   - Current product messaging and positioning
-   - Key features and capabilities highlighted
-   - Target market and customer segments
-   - Competitive differentiators mentioned
-   - Any new announcements or updates
-
-2. PRICING PAGE ANALYSIS:
-   - Pricing models and tiers
-   - Price changes (if any indicators)
-   - Feature comparisons across tiers
-   - Trial/demo offerings
-   - Enterprise vs SMB positioning
-
-3. KNOWLEDGE CENTER/DOCS ANALYSIS:
-   - Technical capabilities and integrations
-   - Implementation complexity indicators
-   - API capabilities and limitations
-   - Customer onboarding process
-   - Support and training resources
-
-4. RECENT CHANGES DETECTION:
-   - New features or products mentioned
-   - Pricing model changes
-   - Messaging shifts
-   - Competitive positioning updates
-   - Partnership announcements
-
-Provide comprehensive analysis in this JSON format:
-{
-  "competitor": "${competitor.name}",
-  "timestamp": "${new Date().toISOString()}",
-  "crawlSources": [
-    {
-      "sourceType": "Main Product Page/Pricing Page/Knowledge Center",
-      "url": "actual URL analyzed",
-      "findings": [
-        {
-          "type": "Product Feature/Pricing/Integration/Messaging",
-          "severity": "High/Medium/Low",
-          "title": "Brief finding title",
-          "description": "Detailed description",
-          "impact": "Potential impact on DealHub.io competitive position",
-          "changeDetected": true/false
-        }
-      ]
-    }
-  ],
-  "productAnalysis": {
-    "currentPositioning": "How they position themselves",
-    "keyFeatures": ["feature1", "feature2"],
-    "targetMarkets": ["market1", "market2"],
-    "integrations": {
-      "native": ["platform1", "platform2"],
-      "api": ["platform3", "platform4"],
-      "limitations": ["limitation1", "limitation2"]
-    }
-  },
-  "pricingAnalysis": {
-    "model": "subscription/usage/custom",
-    "tiers": [
-      {
-        "name": "tier name",
-        "price": "price range",
-        "keyFeatures": ["feature1", "feature2"]
-      }
-    ],
-    "changesDetected": ["change1", "change2"],
-    "competitiveInsights": ["insight1", "insight2"]
-  },
-  "technicalCapabilities": {
-    "crmIntegrations": ["integration1", "integration2"],
-    "apiCapabilities": ["capability1", "capability2"],
-    "implementationComplexity": "Low/Medium/High",
-    "onboardingProcess": "description"
-  },
-  "competitiveThreats": [
-    {
-      "area": "Integration/Pricing/Features/Market",
-      "threat": "specific threat description",
-      "dealHubResponse": "recommended response strategy"
-    }
-  ],
-  "summary": "Overall summary of key intelligence gathered",
-  "recommendedActions": [
-    "Monitor pricing changes on tier X",
-    "Highlight DealHub advantage in area Y",
-    "Investigate new feature Z impact"
-  ]
-}
-
-Base your analysis on the actual content you would find on these pages. Be specific about competitive threats and opportunities. Respond ONLY with valid JSON.`
-            }
-          ]
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
-      }
-
-      const data = await response.json();
-      let responseText = data.content[0].text;
-      responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      
-      const crawlData = JSON.parse(responseText);
-      setCrawlResults(prev => [crawlData, ...prev]);
-      setAnalysisProgress(`✅ Comprehensive crawl completed for ${competitor.name}!`);
-      
-      // Update battle card if it exists
-      if (battleCards[competitor.name]) {
-        setAnalysisProgress(`Updating battle card with new intelligence...`);
-        await updateBattleCardWithCrawlData(competitor.name, crawlData);
-      }
-      
-    } catch (error) {
-      console.error('Error crawling competitor:', error);
-      
-      const fallbackResult = {
-        competitor: competitor.name,
-        timestamp: new Date().toISOString(),
-        crawlSources: [
-          {
-            sourceType: "System Notice",
-            url: "N/A",
-            findings: [
-              {
-                type: "System Notice",
-                severity: "Medium",
-                title: "Comprehensive Crawl Unavailable",
-                description: `Unable to crawl multiple sources for ${competitor.name} due to API limitations. Manual research recommended.`,
-                impact: "Limited competitive intelligence available",
-                changeDetected: false
-              }
-            ]
-          }
-        ],
-        summary: `Comprehensive crawl of ${competitor.name} could not be completed. Consider manual analysis of their main product page, pricing page, and documentation.`,
-        recommendedActions: [
-          `Visit ${competitor.url} directly`,
-          "Check pricing page for updates",
-          "Review knowledge center/documentation"
-        ]
-      };
-      
-      setCrawlResults(prev => [fallbackResult, ...prev]);
-      setAnalysisProgress(`⚠️ Limited crawl completed for ${competitor.name}. Manual research recommended.`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -1502,8 +1513,44 @@ Respond ONLY with valid JSON.`
                       <h4 className="font-medium text-gray-900 mb-2">Pricing Strategy</h4>
                       <div className="text-sm text-gray-600 space-y-1">
                         <div><strong>Model:</strong> {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.model}</div>
+                        
+                        {/* ENHANCED: Show live scraped pricing */}
+                        {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.liveScrapedPricing && 
+                         battleCards[selectedBattleCard].competitorProfile.pricingStrategy.liveScrapedPricing.length > 0 && (
+                          <div>
+                            <strong>Live Scraped Pricing:</strong>
+                            <ul className="mt-1 space-y-1">
+                              {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.liveScrapedPricing.map((price, index) => (
+                                <li key={index} className="text-blue-700 font-medium">
+                                  • {price.amount} {price.currency} ({price.billing || 'billing unknown'})
+                                  <div className="text-xs text-gray-500 ml-2">Source: {price.source}</div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.jsExtractedPricing && 
+                         battleCards[selectedBattleCard].competitorProfile.pricingStrategy.jsExtractedPricing.length > 0 && (
+                          <div>
+                            <strong>JavaScript Extracted Prices:</strong>
+                            <ul className="mt-1 space-y-1">
+                              {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.jsExtractedPricing.map((price, index) => (
+                                <li key={index} className="text-green-700 font-medium">
+                                  • {typeof price === 'string' ? price : `${price.amount} (${price.source})`}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
                         <div><strong>Range:</strong> {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.range}</div>
                         <div><strong>Strategy:</strong> {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.strategy}</div>
+                        <div><strong>Compared to DealHub:</strong> {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.comparedToDealHub}</div>
+                        
+                        {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.isGated && (
+                          <div className="text-orange-600 font-medium">⚠️ Gated Pricing: Contact Sales Required</div>
+                        )}
                       </div>
                     </div>
                     
@@ -1516,6 +1563,42 @@ Respond ONLY with valid JSON.`
                     </div>
                   </div>
                 </div>
+
+                {/* Scraping Status */}
+                {battleCards[selectedBattleCard].scrapingStatus && (
+                  <div className="border-l-4 border-purple-500 bg-purple-50 p-4 rounded-r-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">📊 Data Quality & Sources</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <strong>Last Scraped:</strong>
+                        <div className="text-gray-600">{new Date(battleCards[selectedBattleCard].scrapingStatus.lastScraped).toLocaleDateString()}</div>
+                      </div>
+                      <div>
+                        <strong>Data Quality:</strong>
+                        <div className={`font-medium ${
+                          battleCards[selectedBattleCard].scrapingStatus.dataQuality === 'excellent' ? 'text-green-600' :
+                          battleCards[selectedBattleCard].scrapingStatus.dataQuality === 'good' ? 'text-blue-600' :
+                          battleCards[selectedBattleCard].scrapingStatus.dataQuality === 'limited' ? 'text-yellow-600' :
+                          'text-red-600'
+                        }`}>
+                          {battleCards[selectedBattleCard].scrapingStatus.dataQuality}
+                        </div>
+                      </div>
+                      <div>
+                        <strong>Pricing Found:</strong>
+                        <div className={battleCards[selectedBattleCard].scrapingStatus.pricingFound ? 'text-green-600' : 'text-red-600'}>
+                          {battleCards[selectedBattleCard].scrapingStatus.pricingFound ? '✅ Yes' : '❌ No'}
+                        </div>
+                      </div>
+                      <div>
+                        <strong>Features Found:</strong>
+                        <div className={battleCards[selectedBattleCard].scrapingStatus.featuresFound ? 'text-green-600' : 'text-red-600'}>
+                          {battleCards[selectedBattleCard].scrapingStatus.featuresFound ? '✅ Yes' : '❌ No'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* SWOT Analysis */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1806,43 +1889,6 @@ Respond ONLY with valid JSON.`
                                 ))}
                               </div>
                             ))}
-                            
-                            {/* Enhanced Intelligence Display with Real Data */}
-                            {result.productAnalysis && (
-                              <div className="mt-3 p-2 bg-blue-50 rounded text-xs">
-                                <strong>📊 Live Product Intelligence:</strong>
-                                <div>Current Positioning: {result.productAnalysis.currentPositioning}</div>
-                                {result.productAnalysis.actualPricing && (
-                                  <div>Live Pricing: {result.productAnalysis.actualPricing}</div>
-                                )}
-                                {result.productAnalysis.integrations && (
-                                  <div>Live Integrations: {result.productAnalysis.integrations.native.join(', ')}</div>
-                                )}
-                              </div>
-                            )}
-                            
-                            {result.pricingAnalysis && result.pricingAnalysis.scrapedPricing && (
-                              <div className="mt-2 p-2 bg-green-50 rounded text-xs">
-                                <strong>💰 Live Pricing Data:</strong>
-                                <div>{result.pricingAnalysis.scrapedPricing}</div>
-                                {result.pricingAnalysis.actualContent && (
-                                  <div className="mt-1 italic">""{result.pricingAnalysis.actualContent}""</div>
-                                )}
-                              </div>
-                            )}
-                            
-                            {result.actualFindings && result.actualFindings.length > 0 && (
-                              <div className="mt-2 p-2 bg-purple-50 rounded text-xs">
-                                <strong>🔍 Actual Scraped Findings:</strong>
-                                {result.actualFindings.slice(0, 2).map((finding, idx) => (
-                                  <div key={idx} className="mt-1">
-                                    <div className="font-medium">From: {finding.source}</div>
-                                    <div className="italic">""{finding.content}""</div>
-                                    <div>Insight: {finding.insight}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
                           </div>
                         ) : (
                           // Fallback to old format if new format not available
