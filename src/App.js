@@ -154,14 +154,21 @@ const RealCompetitorDashboard = () => {
         competitorName: competitor.name,
         latestCrawl: latestCrawlData || null,
         
-        // Extract pricing data from latest crawl
+        // FIXED: Extract pricing data from latest crawl - check ALL possible locations
         pricingData: latestCrawlData ? {
+          // Primary: actualPricing array (what your scraper populates)
           actualPrices: latestCrawlData.actualPricing || [],
+          
+          // Secondary: intelligence.pricing structure
           jsExtractedPrices: latestCrawlData.intelligence?.pricing?.jsExtractedPrices || [],
           allPrices: latestCrawlData.intelligence?.pricing?.actualPrices || [],
           isGated: latestCrawlData.intelligence?.pricing?.isGated || false,
           pricingModel: latestCrawlData.intelligence?.pricing?.model || 'unknown',
-          plans: latestCrawlData.intelligence?.pricing?.plans || []
+          plans: latestCrawlData.intelligence?.pricing?.plans || [],
+          
+          // NEW: Check if we have pricing data anywhere
+          hasPricingData: (latestCrawlData.actualPricing && latestCrawlData.actualPricing.length > 0) ||
+                          (latestCrawlData.intelligence?.pricing?.actualPrices && latestCrawlData.intelligence?.pricing?.actualPrices.length > 0)
         } : null,
         
         // Extract feature data
@@ -218,15 +225,16 @@ Custom Intelligence Notes:
 ${customIntel}
 
 CRITICAL INSTRUCTIONS FOR PRICING:
-1. Use ONLY the live scraped pricing data from scrapedIntelligence.pricingData
-2. If actualPrices array has data, extract the specific amounts and currencies
-3. If jsExtractedPrices has data, use those JavaScript-extracted prices
-4. If isGated is true, mention "Contact Sales" pricing model
-5. Show EXACT pricing found, not generic ranges
-6. Compare specific prices to DealHub's pricing model
-7. IMPORTANT: Also check scrapedIntelligence.actualContent for any pricing mentions
-8. Look for pricing patterns like "$200/user/month", "€150 per user", "Contact Sales"
-9. If no structured pricing found, scan actualContent array for price-related text
+1. PRIMARY PRICING SOURCE: Use scrapedIntelligence.pricingData.actualPrices array - this contains live scraped pricing
+2. EXTRACT EXACT AMOUNTS: From actualPrices array, get amount, currency, billing, source
+3. EXPECTED FORMAT: actualPrices = [{amount: "200", currency: "USD", billing: "monthly", source: "html-pricing-card"}]
+4. If actualPrices has data, extract the amounts and show them as "200 USD per month"
+5. SECONDARY SOURCES: Also check jsExtractedPrices and allPrices arrays
+6. If isGated is true, mention "Contact Sales" but also show any found prices
+7. Show EXACT pricing found with full context (amount + currency + billing)
+8. PRICING VALIDATION: If scrapedIntelligence.pricingData.hasPricingData is true, pricing was found
+9. IMPORTANT: actualPrices contains the real scraped prices - use these first
+10. Compare specific prices to DealHub's pricing model ($75-200 per user)
 
 CRITICAL INSTRUCTIONS FOR FEATURES:
 1. Use coreFeatures from scrapedIntelligence.featureData for actual product capabilities
@@ -299,15 +307,13 @@ Create a battle card in this EXACT JSON format:
 }
 
 IMPORTANT: 
-- Only use ACTUAL scraped data from scrapedIntelligence object
-- If no pricing data was scraped, set pricingStrategy.liveScrapedPricing to []
-- If no feature data, set coreOfferings to ["Limited data available - requires manual research"]
-- Be specific about what data came from live scraping vs baseline assumptions
-- Show exact prices with currencies (e.g. "€200/User/Month")
+- PRIORITY 1: Use scrapedIntelligence.pricingData.actualPrices as primary pricing source
+- PRIORITY 2: If actualPrices array has data like [{amount: "200", currency: "USD"}], extract and show it
+- PRIORITY 3: Set pricingStrategy.model to "transparent" if pricing found, "contact-sales" if only gated
+- Show exact scraped prices with currencies (e.g. "200 USD per month", "280 AUD per month")
 - For customerFeedback, use "Data not available" if no information found
-- IMPORTANT: Check scrapedIntelligence.actualContent for pricing mentions
-- Look for text like "$200 per user", "Contact Sales", "Annual contract required"
-- Extract pricing even from unstructured content if found
+- VALIDATION: If scrapedIntelligence.pricingData.hasPricingData is true, prices were definitely found
+- EXAMPLE: actualPrices=[{amount:"200",currency:"USD"}] becomes liveScrapedPricing=[{amount:"200",currency:"USD",billing:"monthly"}]
 
 Respond ONLY with valid JSON.`
             }
