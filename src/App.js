@@ -266,6 +266,10 @@ Create a battle card in this EXACT JSON format:
       "range": "", // BUILD from actual scraped prices
       "strategy": "",
       "comparedToDealHub": "Higher/Lower/Similar based on actual prices found"
+    },
+    "customerFeedback": {
+      "overallRating": "4.2/5.0 or similar based on available data",
+      "sentiment": "Generally positive/mixed/negative based on available data"
     }
   },
   "swotAnalysis": {
@@ -297,6 +301,7 @@ IMPORTANT:
 - If no feature data, set coreOfferings to ["Limited data available - requires manual research"]
 - Be specific about what data came from live scraping vs baseline assumptions
 - Show exact prices with currencies (e.g. "€200/User/Month")
+- For customerFeedback, use "Data not available" if no information found
 
 Respond ONLY with valid JSON.`
             }
@@ -1557,8 +1562,14 @@ Respond ONLY with valid JSON.`
                     <div>
                       <h4 className="font-medium text-gray-900 mb-2">Customer Feedback</h4>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <div><strong>Overall Rating:</strong> {battleCards[selectedBattleCard].competitorProfile.customerFeedback.overallRating}</div>
-                        <div><strong>Sentiment:</strong> {battleCards[selectedBattleCard].competitorProfile.customerFeedback.sentiment}</div>
+                        {battleCards[selectedBattleCard].competitorProfile.customerFeedback ? (
+                          <>
+                            <div><strong>Overall Rating:</strong> {battleCards[selectedBattleCard].competitorProfile.customerFeedback.overallRating}</div>
+                            <div><strong>Sentiment:</strong> {battleCards[selectedBattleCard].competitorProfile.customerFeedback.sentiment}</div>
+                          </>
+                        ) : (
+                          <div className="text-gray-500 italic">Customer feedback data not available</div>
+                        )}
                       </div>
                     </div>
                   </div>
