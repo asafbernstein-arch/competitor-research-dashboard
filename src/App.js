@@ -1421,7 +1421,7 @@ Respond ONLY with valid JSON.`
                     <div>
                       <h4 className="font-medium text-gray-900 mb-2">Current Capabilities</h4>
                       <ul className="text-sm text-gray-600 space-y-1">
-                        {battleCards[selectedBattleCard].dealHubBaseline.capabilities.map((cap, index) => (
+                        {(battleCards[selectedBattleCard].dealHubBaseline.capabilities || []).map((cap, index) => (
                           <li key={index} className="flex items-start gap-2">
                             <div className="w-1 h-1 bg-blue-600 rounded-full mt-2"></div>
                             {cap}
@@ -1433,7 +1433,7 @@ Respond ONLY with valid JSON.`
                     <div>
                       <h4 className="font-medium text-gray-900 mb-2">Key Strengths</h4>
                       <ul className="text-sm text-gray-600 space-y-1">
-                        {battleCards[selectedBattleCard].dealHubBaseline.keyStrengths.map((strength, index) => (
+                        {(battleCards[selectedBattleCard].dealHubBaseline.keyStrengths || []).map((strength, index) => (
                           <li key={index} className="flex items-start gap-2">
                             <div className="w-1 h-1 bg-green-600 rounded-full mt-2"></div>
                             {strength}
@@ -1449,7 +1449,7 @@ Respond ONLY with valid JSON.`
                       <div>
                         <strong>Native:</strong>
                         <ul className="mt-1 space-y-1">
-                          {battleCards[selectedBattleCard].dealHubBaseline.crmIntegrations.native.map((crm, index) => (
+                          {(battleCards[selectedBattleCard].dealHubBaseline.crmIntegrations.native || []).map((crm, index) => (
                             <li key={index} className="text-gray-600">• {crm}</li>
                           ))}
                         </ul>
@@ -1457,7 +1457,7 @@ Respond ONLY with valid JSON.`
                       <div>
                         <strong>API Connections:</strong>
                         <ul className="mt-1 space-y-1">
-                          {battleCards[selectedBattleCard].dealHubBaseline.crmIntegrations.api.map((api, index) => (
+                          {(battleCards[selectedBattleCard].dealHubBaseline.crmIntegrations.api || []).map((api, index) => (
                             <li key={index} className="text-gray-600">• {api}</li>
                           ))}
                         </ul>
@@ -1479,7 +1479,7 @@ Respond ONLY with valid JSON.`
                       <div className="mb-3">
                         <strong className="text-sm">Core Offerings:</strong>
                         <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                          {battleCards[selectedBattleCard].competitorProfile.coreOfferings.map((offering, index) => (
+                          {(battleCards[selectedBattleCard].competitorProfile.coreOfferings || []).map((offering, index) => (
                             <li key={index}>• {offering}</li>
                           ))}
                         </ul>
@@ -1487,7 +1487,7 @@ Respond ONLY with valid JSON.`
                       <div>
                         <strong className="text-sm">Key Differentiators:</strong>
                         <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                          {battleCards[selectedBattleCard].competitorProfile.keyDifferentiators.map((diff, index) => (
+                          {(battleCards[selectedBattleCard].competitorProfile.keyDifferentiators || []).map((diff, index) => (
                             <li key={index}>• {diff}</li>
                           ))}
                         </ul>
@@ -1499,7 +1499,7 @@ Respond ONLY with valid JSON.`
                       <div className="text-sm mb-3">
                         <strong>Native:</strong>
                         <ul className="mt-1 space-y-1">
-                          {battleCards[selectedBattleCard].competitorProfile.crmIntegrations.native.map((crm, index) => (
+                          {(battleCards[selectedBattleCard].competitorProfile.crmIntegrations.native || []).map((crm, index) => (
                             <li key={index} className="text-gray-600">• {crm}</li>
                           ))}
                         </ul>
@@ -1525,7 +1525,7 @@ Respond ONLY with valid JSON.`
                           <div>
                             <strong>Live Scraped Pricing:</strong>
                             <ul className="mt-1 space-y-1">
-                              {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.liveScrapedPricing.map((price, index) => (
+                              {(battleCards[selectedBattleCard].competitorProfile.pricingStrategy.liveScrapedPricing || []).map((price, index) => (
                                 <li key={index} className="text-blue-700 font-medium">
                                   • {price.amount} {price.currency} ({price.billing || 'billing unknown'})
                                   <div className="text-xs text-gray-500 ml-2">Source: {price.source}</div>
@@ -1540,7 +1540,7 @@ Respond ONLY with valid JSON.`
                           <div>
                             <strong>JavaScript Extracted Prices:</strong>
                             <ul className="mt-1 space-y-1">
-                              {battleCards[selectedBattleCard].competitorProfile.pricingStrategy.jsExtractedPricing.map((price, index) => (
+                              {(battleCards[selectedBattleCard].competitorProfile.pricingStrategy.jsExtractedPricing || []).map((price, index) => (
                                 <li key={index} className="text-green-700 font-medium">
                                   • {typeof price === 'string' ? price : `${price.amount} (${price.source})`}
                                 </li>
@@ -1619,7 +1619,7 @@ Respond ONLY with valid JSON.`
                       <div>
                         <strong className="text-sm text-green-700">Strengths:</strong>
                         <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                          {battleCards[selectedBattleCard].swotAnalysis.strengths.map((strength, index) => (
+                          {(battleCards[selectedBattleCard].swotAnalysis.strengths || []).map((strength, index) => (
                             <li key={index}>• {strength}</li>
                           ))}
                         </ul>
@@ -1627,7 +1627,7 @@ Respond ONLY with valid JSON.`
                       <div>
                         <strong className="text-sm text-red-700">Weaknesses:</strong>
                         <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                          {battleCards[selectedBattleCard].swotAnalysis.weaknesses.map((weakness, index) => (
+                          {(battleCards[selectedBattleCard].swotAnalysis.weaknesses || []).map((weakness, index) => (
                             <li key={index}>• {weakness}</li>
                           ))}
                         </ul>
@@ -1641,7 +1641,7 @@ Respond ONLY with valid JSON.`
                       <div>
                         <strong className="text-sm text-blue-700">Market Opportunities:</strong>
                         <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                          {battleCards[selectedBattleCard].dealHubBaseline.marketOpportunities.map((opp, index) => (
+                          {(battleCards[selectedBattleCard].dealHubBaseline.marketOpportunities || []).map((opp, index) => (
                             <li key={index}>• {opp}</li>
                           ))}
                         </ul>
@@ -1649,7 +1649,7 @@ Respond ONLY with valid JSON.`
                       <div>
                         <strong className="text-sm text-purple-700">DealHub Advantages:</strong>
                         <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                          {battleCards[selectedBattleCard].dealHubBaseline.advantages.map((adv, index) => (
+                          {(battleCards[selectedBattleCard].dealHubBaseline.advantages || []).map((adv, index) => (
                             <li key={index}>• {adv}</li>
                           ))}
                         </ul>
@@ -1663,7 +1663,7 @@ Respond ONLY with valid JSON.`
                   <div className="border-l-4 border-green-500 bg-green-50 p-4 rounded-r-lg">
                     <h4 className="font-medium text-gray-900 mb-3">💡 Recommendations</h4>
                     <div className="space-y-3">
-                      {battleCards[selectedBattleCard].recommendations.map((rec, index) => (
+                      {(battleCards[selectedBattleCard].recommendations || []).map((rec, index) => (
                         <div key={index} className="border-b border-green-200 pb-2 last:border-b-0">
                           <div className="flex justify-between items-start mb-1">
                             <strong className="text-sm text-gray-900">{rec.category}</strong>
@@ -1673,7 +1673,7 @@ Respond ONLY with valid JSON.`
                             <div>
                               <strong className="text-xs text-gray-600">Key Talking Points:</strong>
                               <ul className="text-xs text-gray-600 mt-1 space-y-1">
-                                {rec.talkingPoints.map((point, idx) => (
+                                {(rec.talkingPoints || []).map((point, idx) => (
                                   <li key={idx}>• {point}</li>
                                 ))}
                               </ul>
