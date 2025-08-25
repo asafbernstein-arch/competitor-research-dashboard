@@ -224,6 +224,9 @@ CRITICAL INSTRUCTIONS FOR PRICING:
 4. If isGated is true, mention "Contact Sales" pricing model
 5. Show EXACT pricing found, not generic ranges
 6. Compare specific prices to DealHub's pricing model
+7. IMPORTANT: Also check scrapedIntelligence.actualContent for any pricing mentions
+8. Look for pricing patterns like "$200/user/month", "€150 per user", "Contact Sales"
+9. If no structured pricing found, scan actualContent array for price-related text
 
 CRITICAL INSTRUCTIONS FOR FEATURES:
 1. Use coreFeatures from scrapedIntelligence.featureData for actual product capabilities
@@ -302,6 +305,9 @@ IMPORTANT:
 - Be specific about what data came from live scraping vs baseline assumptions
 - Show exact prices with currencies (e.g. "€200/User/Month")
 - For customerFeedback, use "Data not available" if no information found
+- IMPORTANT: Check scrapedIntelligence.actualContent for pricing mentions
+- Look for text like "$200 per user", "Contact Sales", "Annual contract required"
+- Extract pricing even from unstructured content if found
 
 Respond ONLY with valid JSON.`
             }
