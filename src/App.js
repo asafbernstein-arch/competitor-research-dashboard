@@ -147,6 +147,34 @@ const RealCompetitorDashboard = () => {
         .filter(result => result.competitor === competitor.name)
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]; // Get most recent
 
+      // DEBUG: Log what we found
+      console.log('🔍 DEBUG: Battle Card Generation Data Check');
+      console.log('Competitor name:', competitor.name);
+      console.log('Total crawl results:', crawlResults.length);
+      console.log('Crawl results for this competitor:', crawlResults.filter(result => result.competitor === competitor.name).length);
+      console.log('Latest crawl data:', latestCrawlData);
+      
+      if (latestCrawlData) {
+        console.log('✅ Latest crawl data found:');
+        console.log('- Timestamp:', latestCrawlData.timestamp);
+        console.log('- Scraped successfully:', latestCrawlData.scrapedSuccessfully);
+        console.log('- actualPricing:', latestCrawlData.actualPricing);
+        console.log('- actualPricing length:', latestCrawlData.actualPricing?.length);
+        console.log('- intelligence object:', latestCrawlData.intelligence);
+        
+        if (latestCrawlData.actualPricing && latestCrawlData.actualPricing.length > 0) {
+          console.log('💰 PRICING DATA FOUND:');
+          latestCrawlData.actualPricing.forEach((price, index) => {
+            console.log(`  ${index + 1}. ${price.amount} ${price.currency} (${price.source})`);
+          });
+        } else {
+          console.log('❌ NO actualPricing data found');
+        }
+      } else {
+        console.log('❌ NO latest crawl data found for', competitor.name);
+        console.log('Available competitors in crawl results:', crawlResults.map(r => r.competitor));
+      }
+
       const customIntel = customIntelligence[competitor.name] || "";
 
       // Prepare comprehensive scraped intelligence
